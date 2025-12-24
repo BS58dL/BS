@@ -1089,14 +1089,25 @@ function section.Textbox(section, text, flag, default, callback)
     end)
     
     BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
+    
+    local funcs = {
+        SetText = function(self, text)
+            TextBox.Text = text
+            library.flags[flag] = text
+            callback(text)
+        end,
+        GetText = function(self)
+            return TextBox.Text
+        end,
+        Module = TextboxModule,
+        TextBox = TextBox,  
+    }
+    
+    return funcs
 end
-				
-				TextBox:GetPropertyChangedSignal("TextBounds"):Connect(function()
-					BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
-				end)
-				
-				BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
-			end
+
+section.TextBox = section.Textbox
+section.textbox = section.Textbox
 			
 			function section.Slider(section, text, flag, default, min, max, precise, callback)
 				local callback = callback or function() end
