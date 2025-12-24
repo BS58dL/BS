@@ -467,7 +467,7 @@ function library.new(library, name, theme)
 	Open.BackgroundColor3 = Colors.Primary
 	Open.BackgroundTransparency = Colors.Transparent
 	Open.Position = UDim2.new(0.01, 0, 0.3, 0)
-	Open.Size = UDim2.new(0, 70, 0, 70)
+	Open.Size = UDim2.new(0, 70, 0, 35)
 	Open.Font = Enum.Font.GothamBold
 	Open.Text = "BS"
 	Open.TextColor3 = Colors.Text
@@ -1012,102 +1012,107 @@ function library.new(library, name, theme)
 				KeybindValue.Size = UDim2.new(0, KeybindValue.TextBounds.X + 30, 0, 28)
 			end
 			
-function section.Textbox(section, text, flag, default, callback)
-    local callback = callback or function() end
-    assert(text, "No text provided")
-    assert(flag, "No flag provided")
-    assert(default, "No default text provided")
-    library.flags[flag] = default
-    table.insert(tab._info.searchableComponents, text)
-    
-    local TextboxModule = Instance.new("Frame")
-    TextboxModule.Name = "TextboxModule"
-    TextboxModule.Parent = Objs
-    TextboxModule.BackgroundTransparency = 1
-    TextboxModule.Size = UDim2.new(1, 0, 0, 40)
-    
-    local TextboxBack = Instance.new("TextButton")
-    TextboxBack.Name = "TextboxBack"
-    TextboxBack.Parent = TextboxModule
-    TextboxBack.BackgroundColor3 = Colors.Secondary
-    TextboxBack.BackgroundTransparency = 0.3
-    TextboxBack.Size = UDim2.new(1, 0, 1, 0)
-    TextboxBack.AutoButtonColor = false
-    TextboxBack.Font = Enum.Font.GothamSemibold
-    TextboxBack.Text = "   " .. text
-    TextboxBack.TextColor3 = Colors.Text
-    TextboxBack.TextSize = 15
-    TextboxBack.TextXAlignment = Enum.TextXAlignment.Left
-    
-    CreateGlassEffect(TextboxBack)
-    
-    local TextboxBackC = Instance.new("UICorner")
-    TextboxBackC.CornerRadius = UDim.new(0, 6)
-    TextboxBackC.Parent = TextboxBack
-    
-    local BoxBG = Instance.new("TextButton")
-    BoxBG.Name = "BoxBG"
-    BoxBG.Parent = TextboxBack
-    BoxBG.BackgroundColor3 = Colors.Primary
-    BoxBG.BackgroundTransparency = 0.5
-    BoxBG.AnchorPoint = Vector2.new(1, 0.5) 
-    BoxBG.Position = UDim2.new(1, -10, 0.5, 0) 
-    BoxBG.Size = UDim2.new(0, 90, 0, 28)
-    BoxBG.AutoButtonColor = false
-    BoxBG.Text = ""
-    
-    local BoxBGC = Instance.new("UICorner")
-    BoxBGC.CornerRadius = UDim.new(0, 6)
-    BoxBGC.Parent = BoxBG
-    
-    local TextBox = Instance.new("TextBox")
-    TextBox.Name = "TextBox"
-    TextBox.Parent = BoxBG
-    TextBox.BackgroundTransparency = 1
-    TextBox.Size = UDim2.new(1, 0, 1, 0)
-    TextBox.Font = Enum.Font.Gotham
-    TextBox.Text = default
-    TextBox.TextColor3 = Colors.Text
-    TextBox.PlaceholderColor3 = Colors.Placeholder
-    TextBox.TextSize = 14
-    TextBox.ClearTextOnFocus = false
-    
-    local UIPadding = Instance.new("UIPadding")
-    UIPadding.Parent = TextboxBack
-    UIPadding.PaddingRight = UDim.new(0, 6)
-    
-    TextBox.FocusLost:Connect(function()
-        if TextBox.Text == "" then
-            TextBox.Text = default
-        end
-        library.flags[flag] = TextBox.Text
-        callback(TextBox.Text)
-    end)
-    
-    TextBox:GetPropertyChangedSignal("TextBounds"):Connect(function()
-        BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
-    end)
-    
-    BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
-    
-    local funcs = {
-        SetText = function(self, text)
-            TextBox.Text = text
-            library.flags[flag] = text
-            callback(text)
-        end,
-        GetText = function(self)
-            return TextBox.Text
-        end,
-        Module = TextboxModule,
-        TextBox = TextBox,  
-    }
-    
-    return funcs
-end
-
-section.TextBox = section.Textbox
-section.textbox = section.Textbox
+			function section.Textbox(section, text, flag, default, callback)
+				local callback = callback or function() end
+				assert(text, "No text provided")
+				assert(flag, "No flag provided")
+				assert(default, "No default text provided")
+				library.flags[flag] = default
+				table.insert(tab._info.searchableComponents, text)
+				
+				local TextboxModule = Instance.new("Frame")
+				TextboxModule.Name = "TextboxModule"
+				TextboxModule.Parent = Objs
+				TextboxModule.BackgroundTransparency = 1
+				TextboxModule.Size = UDim2.new(1, 0, 0, 40)
+				
+				local TextboxBack = Instance.new("TextButton")
+				TextboxBack.Name = "TextboxBack"
+				TextboxBack.Parent = TextboxModule
+				TextboxBack.BackgroundColor3 = Colors.Secondary
+				TextboxBack.BackgroundTransparency = 0.3
+				TextboxBack.Size = UDim2.new(1, 0, 1, 0)
+				TextboxBack.AutoButtonColor = false
+				TextboxBack.Font = Enum.Font.GothamSemibold
+				TextboxBack.Text = "   " .. text
+				TextboxBack.TextColor3 = Colors.Text
+				TextboxBack.TextSize = 15
+				TextboxBack.TextXAlignment = Enum.TextXAlignment.Left
+				
+				CreateGlassEffect(TextboxBack)
+				
+				local TextboxBackC = Instance.new("UICorner")
+				TextboxBackC.CornerRadius = UDim.new(0, 6)
+				TextboxBackC.Parent = TextboxBack
+				
+				local BoxBG = Instance.new("TextButton")
+				BoxBG.Name = "BoxBG"
+				BoxBG.Parent = TextboxBack
+				BoxBG.BackgroundColor3 = Colors.Primary
+				BoxBG.BackgroundTransparency = 0.5
+				BoxBG.Position = UDim2.new(1, -100, 0.5, -14)
+				BoxBG.Size = UDim2.new(0, 90, 0, 28)
+				BoxBG.AutoButtonColor = false
+				BoxBG.Text = ""
+				
+				local BoxBGC = Instance.new("UICorner")
+				BoxBGC.CornerRadius = UDim.new(0, 6)
+				BoxBGC.Parent = BoxBG
+				
+				local TB = Instance.new("TextBox")
+				TB.Name = "TextBox"
+				TB.Parent = BoxBG
+				TB.BackgroundTransparency = 1
+				TB.Size = UDim2.new(1, 0, 1, 0)
+				TB.Font = Enum.Font.Gotham
+				TB.Text = default
+				TB.TextColor3 = Colors.Text
+				TB.PlaceholderColor3 = Colors.Placeholder
+				TB.TextSize = 14
+				TB.ClearTextOnFocus = false
+				
+				local TextboxBackL = Instance.new("UIListLayout")
+				TextboxBackL.Name = "TextboxBackL"
+				TextboxBackL.Parent = TextboxBack
+				TextboxBackL.HorizontalAlignment = Enum.HorizontalAlignment.Right
+				TextboxBackL.SortOrder = Enum.SortOrder.LayoutOrder
+				TextboxBackL.VerticalAlignment = Enum.VerticalAlignment.Center
+				
+				local TextboxBackP = Instance.new("UIPadding")
+				TextboxBackP.Name = "TextboxBackP"
+				TextboxBackP.Parent = TextboxBack
+				TextboxBackP.PaddingRight = UDim.new(0, 6)
+				
+				local textboxValue = default
+				
+				TB.FocusLost:Connect(function()
+					if TB.Text == "" then
+						TB.Text = default
+					end
+					textboxValue = TB.Text
+					library.flags[flag] = TB.Text
+					callback(TB.Text)
+				end)
+				
+				TB:GetPropertyChangedSignal("TextBounds"):Connect(function()
+					BoxBG.Size = UDim2.new(0, TB.TextBounds.X + 40, 0, 28)
+				end)
+				
+				BoxBG.Size = UDim2.new(0, TB.TextBounds.X + 40, 0, 28)
+				
+				local funcs = {
+					GetValue = function() return textboxValue end,
+					SetValue = function(self, value) 
+						TB.Text = tostring(value)
+						textboxValue = value
+						library.flags[flag] = value
+						callback(value)
+					end,
+					Module = TextboxModule
+				}
+				
+				return funcs
+			end
 			
 			function section.Slider(section, text, flag, default, min, max, precise, callback)
 				local callback = callback or function() end
