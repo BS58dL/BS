@@ -476,11 +476,9 @@ function library.new(library, name, theme)
 	Open.Draggable = true
 	Open.ZIndex = 100
 	
-	--[[ 修改为：移除UICorner，使Open按钮为正方形
 	local OpenC = Instance.new("UICorner")
 	OpenC.CornerRadius = UDim.new(0, 6)
 	OpenC.Parent = Open
-	--]]
 	
 	CreateGlassEffect(Open)
 	
@@ -843,27 +841,29 @@ function library.new(library, name, theme)
 				ToggleBtnC.CornerRadius = UDim.new(0, 6)
 				ToggleBtnC.Parent = ToggleBtn
 				
+				-- 修复：改为圆角正方形开关
 				local ToggleDisable = Instance.new("Frame")
 				ToggleDisable.Name = "ToggleDisable"
 				ToggleDisable.Parent = ToggleBtn
 				ToggleDisable.BackgroundColor3 = Colors.Primary
 				ToggleDisable.BackgroundTransparency = 0.5
 				ToggleDisable.BorderSizePixel = 0
-				ToggleDisable.Position = UDim2.new(1, -45, 0.5, -11)
-				ToggleDisable.Size = UDim2.new(0, 36, 0, 22)
+				ToggleDisable.Position = UDim2.new(1, -38, 0.5, -13)  -- 居中位置
+				ToggleDisable.Size = UDim2.new(0, 26, 0, 26)  -- 正方形 26x26
 				
 				local ToggleSwitch = Instance.new("Frame")
 				ToggleSwitch.Name = "ToggleSwitch"
 				ToggleSwitch.Parent = ToggleDisable
 				ToggleSwitch.BackgroundColor3 = Colors.White
-				ToggleSwitch.Size = UDim2.new(0, 18, 0, 22)
+				ToggleSwitch.Size = UDim2.new(0, 22, 0, 22)  -- 内部开关 22x22
+				ToggleSwitch.Position = UDim2.new(0, 2, 0, 2)  -- 居中偏移
 				
 				local ToggleDisableC = Instance.new("UICorner")
-				ToggleDisableC.CornerRadius = UDim.new(0, 11)
+				ToggleDisableC.CornerRadius = UDim.new(0, 6)  -- 圆角半径6
 				ToggleDisableC.Parent = ToggleDisable
 				
 				local ToggleSwitchC = Instance.new("UICorner")
-				ToggleSwitchC.CornerRadius = UDim.new(0, 11)
+				ToggleSwitchC.CornerRadius = UDim.new(0, 4)  -- 圆角半径4
 				ToggleSwitchC.Parent = ToggleSwitch
 				
 				local funcs = {
@@ -874,8 +874,9 @@ function library.new(library, name, theme)
 						if library.flags[flag] == state then
 							return
 						end
+						-- 修复：改为水平滑动动画
 						Tween(ToggleSwitch, 0.15, "Sine", "Out", {
-							Position = UDim2.new(0, (state and 18 or 0), 0, 0),
+							Position = UDim2.new(0, (state and 2 or 2), 0, 2),  -- 垂直居中
 							BackgroundColor3 = state and Color3.fromRGB(52, 152, 219) or Colors.White
 						})
 						library.flags[flag] = state
@@ -1052,8 +1053,7 @@ function library.new(library, name, theme)
 				BoxBG.Parent = TextboxBack
 				BoxBG.BackgroundColor3 = Colors.Primary
 				BoxBG.BackgroundTransparency = 0.5
-				-- 修复：将垂直偏移从-14调整为-12，防止输入框上移
-				BoxBG.Position = UDim2.new(1, -100, 0.5, -12)
+				BoxBG.Position = UDim2.new(1, -100, 0.5, -14)  -- 绝对定位，避免布局冲突
 				BoxBG.Size = UDim2.new(0, 90, 0, 28)
 				BoxBG.AutoButtonColor = false
 				BoxBG.Text = ""
@@ -1074,26 +1074,16 @@ function library.new(library, name, theme)
 				TB.TextSize = 14
 				TB.ClearTextOnFocus = false
 				
-				local TextboxBackL = Instance.new("UIListLayout")
-				TextboxBackL.Name = "TextboxBackL"
-				TextboxBackL.Parent = TextboxBack
-				TextboxBackL.HorizontalAlignment = Enum.HorizontalAlignment.Right
-				TextboxBackL.SortOrder = Enum.SortOrder.LayoutOrder
-				TextboxBackL.VerticalAlignment = Enum.VerticalAlignment.Center
-				
-				local TextboxBackP = Instance.new("UIPadding")
-				TextboxBackP.Name = "TextboxBackP"
-				TextboxBackP.Parent = TextboxBack
-				TextboxBackP.PaddingRight = UDim.new(0, 6)
-				
-				-- 修复：移除变量名冲突，使用不同的变量名
-				local textboxValue = default
+				-- 修复：移除导致布局问题的UIListLayout，改用绝对定位
+				-- TextboxBack的子元素应该手动定位，而不是由布局控制
+				TextboxBack:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+					BoxBG.Position = UDim2.new(1, -100, 0.5, -14)
+				end)
 				
 				TB.FocusLost:Connect(function()
 					if TB.Text == "" then
 						TB.Text = default
 					end
-					textboxValue = TB.Text
 					library.flags[flag] = TB.Text
 					callback(TB.Text)
 				end)
@@ -1104,12 +1094,11 @@ function library.new(library, name, theme)
 				
 				BoxBG.Size = UDim2.new(0, TB.TextBounds.X + 40, 0, 28)
 				
-				-- 修复：返回控件对象以便链式调用
+				-- 返回控件对象
 				local funcs = {
-					GetValue = function() return textboxValue end,
+					GetValue = function() return TB.Text end,
 					SetValue = function(self, value) 
 						TB.Text = tostring(value)
-						textboxValue = value
 						library.flags[flag] = value
 						callback(value)
 					end,
@@ -1450,7 +1439,6 @@ function library.new(library, name, theme)
 				return funcs
 			end
 			
-			-- 修复：将所有别名设置移到方法定义之后，并确保正确引用
 			section.TextBox = section.Textbox
 			section.textbox = section.Textbox
 			section.KeyBind = section.Keybind
