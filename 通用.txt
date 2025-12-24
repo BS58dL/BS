@@ -124,7 +124,8 @@ function library.new(library, name, theme, customConfig)
 	end
 	
 	local resizingEnabled = false
-	local isResizing = false
+	local isResizingWidth = false
+	local isResizingHeight = false
 	local startSize = UDim2.new(0, 0, 0, 0)
 	local startPosition = Vector2.new(0, 0)
 	
@@ -206,10 +207,10 @@ function library.new(library, name, theme, customConfig)
 	ResizeToggleBtn.Parent = Main
 	ResizeToggleBtn.BackgroundColor3 = Colors.Secondary
 	ResizeToggleBtn.BackgroundTransparency = Colors.Transparent
-	ResizeToggleBtn.Position = UDim2.new(1, -65, 0, 10) 
+	ResizeToggleBtn.Position = UDim2.new(1, -65, 0, 10)
 	ResizeToggleBtn.Size = UDim2.new(0, 25, 0, 25)
 	ResizeToggleBtn.Font = Enum.Font.GothamBold
-	ResizeToggleBtn.Text = "◐" 
+	ResizeToggleBtn.Text = "◐"
 	ResizeToggleBtn.TextColor3 = Colors.Text
 	ResizeToggleBtn.TextSize = 16
 	ResizeToggleBtn.ZIndex = 10
@@ -217,32 +218,28 @@ function library.new(library, name, theme, customConfig)
 	local ResizeToggleBtnC = Instance.new("UICorner")
 	ResizeToggleBtnC.CornerRadius = UDim.new(0, 6)
 	ResizeToggleBtnC.Parent = ResizeToggleBtn
-
-	local ResizeHandle = Instance.new("Frame")
-	ResizeHandle.Name = "ResizeHandle"
-	ResizeHandle.Parent = Main
-	ResizeHandle.BackgroundColor3 = Colors.Accent
-	ResizeHandle.BackgroundTransparency = 0.3
-	ResizeHandle.AnchorPoint = Vector2.new(1, 1) 
-	ResizeHandle.Position = UDim2.new(1, -10, 1, -10)
-	ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
-	ResizeHandle.ZIndex = 10
-	ResizeHandle.Visible = false
-	ResizeHandle.Active = true
 	
-	local ResizeHandleC = Instance.new("UICorner")
-	ResizeHandleC.CornerRadius = UDim.new(0, 4)
-	ResizeHandleC.Parent = ResizeHandle
+	local WidthResizeBar = Instance.new("Frame")
+	WidthResizeBar.Name = "WidthResizeBar"
+	WidthResizeBar.Parent = Main
+	WidthResizeBar.BackgroundColor3 = Colors.Accent
+	WidthResizeBar.AnchorPoint = Vector2.new(0, 0.5)
+	WidthResizeBar.Position = UDim2.new(1, 0, 0.5, 0)
+	WidthResizeBar.Size = UDim2.new(0, 8, 1, 0)
+	WidthResizeBar.ZIndex = 5
+	WidthResizeBar.Visible = false
+	WidthResizeBar.Active = true
 	
-	local ResizeIcon = Instance.new("TextLabel")
-	ResizeIcon.Name = "ResizeIcon"
-	ResizeIcon.Parent = ResizeHandle
-	ResizeIcon.BackgroundTransparency = 1
-	ResizeIcon.Size = UDim2.new(1, 0, 1, 0)
-	ResizeIcon.Font = Enum.Font.GothamBold
-	ResizeIcon.Text = "↘"
-	ResizeIcon.TextColor3 = Colors.White
-	ResizeIcon.TextSize = 10
+	local HeightResizeBar = Instance.new("Frame")
+	HeightResizeBar.Name = "HeightResizeBar"
+	HeightResizeBar.Parent = Main
+	HeightResizeBar.BackgroundColor3 = Colors.Accent
+	HeightResizeBar.AnchorPoint = Vector2.new(0.5, 0)
+	HeightResizeBar.Position = UDim2.new(0.5, 0, 1, 0)
+	HeightResizeBar.Size = UDim2.new(1, 0, 0, 8)
+	HeightResizeBar.ZIndex = 5
+	HeightResizeBar.Visible = false
+	HeightResizeBar.Active = true
 	
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Name = "TitleBar"
@@ -448,7 +445,8 @@ function library.new(library, name, theme, customConfig)
 	
 	ResizeToggleBtn.MouseButton1Click:Connect(function()
 		resizingEnabled = not resizingEnabled
-		ResizeHandle.Visible = resizingEnabled
+		WidthResizeBar.Visible = resizingEnabled
+		HeightResizeBar.Visible = resizingEnabled
 		ResizeToggleBtn.Text = resizingEnabled and "◉" or "◐"
 		
 		if resizingEnabled then
@@ -456,34 +454,50 @@ function library.new(library, name, theme, customConfig)
 		else
 			Tween(ResizeToggleBtn, 0.2, "Sine", "Out", { BackgroundColor3 = Colors.Secondary })
 		end
-	end)
+	end
 	
-	ResizeHandle.InputBegan:Connect(function(input)
+	WidthResizeBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 and resizingEnabled then
-			isResizing = true
+			isResizingWidth = true
 			startSize = Main.Size
 			startPosition = input.Position
-			
+			Main.Draggable = false
+		end
+	end)
+	
+	HeightResizeBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and resizingEnabled then
+			isResizingHeight = true
+			startSize = Main.Size
+			startPosition = input.Position
 			Main.Draggable = false
 		end
 	end)
 	
 	services.UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 and isResizing then
-			isResizing = false
-			Main.Draggable = true 
-			saveSize() 
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if isResizingWidth or isResizingHeight then
+				isResizingWidth = false
+				isResizingHeight = false
+				Main.Draggable = true
+				saveSize()
+			end
 		end
 	end)
 	
 	services.UserInputService.InputChanged:Connect(function(input)
-		if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local delta = input.Position - startPosition
-		
-			local newWidth = math.max(500, startSize.X.Offset + delta.X)
-			local newHeight = math.max(300, startSize.Y.Offset + delta.Y)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			if isResizingWidth then
+				local delta = input.Position - startPosition
+				local newWidth = math.max(500, startSize.X.Offset + delta.X)
+				Main.Size = UDim2.new(0, math.floor(newWidth), 0, startSize.Y.Offset)
+			end
 			
-			Main.Size = UDim2.new(0, math.floor(newWidth), 0, math.floor(newHeight))
+			if isResizingHeight then
+				local delta = input.Position - startPosition
+				local newHeight = math.max(300, startSize.Y.Offset + delta.Y)
+				Main.Size = UDim2.new(0, startSize.X.Offset, 0, math.floor(newHeight))
+			end
 		end
 	end)
 	
