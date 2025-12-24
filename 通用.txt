@@ -468,7 +468,7 @@ function library.new(library, name, theme)
 	Open.BackgroundTransparency = Colors.Transparent
 	Open.Position = UDim2.new(0.01, 0, 0.3, 0)
 	Open.Size = UDim2.new(0, 35, 0, 35)
-	Open.Image = "rbxassetid://3926305904"
+	Open.Image = "rbxassetid://5436396975"
 	Open.ImageRectOffset = Vector2.new(764, 324)
 	Open.ImageRectSize = Vector2.new(36, 36)
 	Open.ImageColor3 = Colors.Text
