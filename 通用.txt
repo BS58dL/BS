@@ -500,12 +500,15 @@ function library.new(library, name, theme)
 		tabBtn.Size = UDim2.new(1, 0, 1, 0)
 		tabBtn.Text = ""
 		
-		local tabFrame = Instance.new("Frame")
+		local tabFrame = Instance.new("ScrollingFrame")
 		tabFrame.Name = "Tab"
 		tabFrame.Parent = TabMain
 		tabFrame.BackgroundTransparency = 1
 		tabFrame.Size = UDim2.new(1, 0, 1, 0)
 		tabFrame.Visible = false
+		tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+		tabFrame.ScrollBarThickness = 2
+		tabFrame.ScrollBarImageColor3 = Colors.Secondary
 		
 		local tabL = Instance.new("UIListLayout")
 		tabL.Name = "TabL"
@@ -621,31 +624,34 @@ function library.new(library, name, theme)
 			ObjsL.SortOrder = Enum.SortOrder.LayoutOrder
 			ObjsL.Padding = UDim.new(0, UIConfig.ComponentSpacing)
 			
-			ObjsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-				wait()
-				if open then
-					Section.Size = UDim2.new(0.975, 0, 0, UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing)
-				end
-				UpdateWindowHeight()
-			end)
+			local section = {}
+			section.isOpen = TabVal ~= false
 			
-			local open = TabVal
-			if TabVal ~= false then
-				Section.Size = UDim2.new(0.975, 0, 0, open and UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing or UIConfig.SectionHeaderHeight)
-				SectionOpened.ImageTransparency = (open and 0 or 1)
-				SectionOpen.ImageTransparency = (open and 1 or 0)
+			local function UpdateSectionSize()
+				local contentHeight = ObjsL.AbsoluteContentSize.Y
+				local targetHeight = section.isOpen and (UIConfig.SectionHeaderHeight + contentHeight + UIConfig.ComponentSpacing) or UIConfig.SectionHeaderHeight
+				Section.Size = UDim2.new(0.975, 0, 0, targetHeight)
 			end
 			
+			SectionOpened.ImageTransparency = section.isOpen and 0 or 1
+			SectionOpen.ImageTransparency = section.isOpen and 1 or 0
+			UpdateSectionSize()
+			
 			SectionToggle.MouseButton1Click:Connect(function()
-				open = not open
-				Section.Size = UDim2.new(0.975, 0, 0, open and UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing or UIConfig.SectionHeaderHeight)
-				SectionOpened.ImageTransparency = (open and 0 or 1)
-				SectionOpen.ImageTransparency = (open and 1 or 0)
-				Tween(Section, 0.2, "Sine", "Out", { BackgroundTransparency = open and 0.25 or 0 })
+				section.isOpen = not section.isOpen
+				SectionOpened.ImageTransparency = section.isOpen and 0 or 1
+				SectionOpen.ImageTransparency = section.isOpen and 1 or 0
+				Tween(Section, 0.2, "Sine", "Out", { BackgroundTransparency = section.isOpen and 0.25 or 0 })
+				UpdateSectionSize()
+				task.wait()
 				UpdateWindowHeight()
 			end)
 			
-			local section = {}
+			ObjsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				UpdateSectionSize()
+				task.wait()
+				UpdateWindowHeight()
+			end)
 			
 			function section.Button(section, text, callback)
 				local callback = callback or function() end
