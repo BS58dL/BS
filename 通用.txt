@@ -834,8 +834,7 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			-- ========== 创建文本框（向后兼容）==========
-			-- 这是关键修复：同时支持 Textbox 和 TextBox 调用
+			-- ========== 创建文本框（修复核心问题）==========
 			function section.Textbox(section, text, flag, default, placeholder, callback)
 				-- 向后兼容参数处理
 				callback = callback or function() end
@@ -915,7 +914,8 @@ function library.new(library, name)
 				end)
 			end
 			
-			-- 向后兼容：支持旧版调用大小写
+			-- ========== 关键修复：立即注册所有大小写别名 ==========
+			-- 确保在section对象返回前就注册所有兼容方法名
 			section.textbox = section.Textbox
 			section.TextBox = section.Textbox
 			
