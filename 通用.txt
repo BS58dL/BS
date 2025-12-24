@@ -11,42 +11,50 @@ local services = setmetatable({}, {
 		return game.GetService(game, k)
 	end,
 })
-
 local mouse = services.Players.LocalPlayer:GetMouse()
 
--- ==================== 配置系统 ====================
-local Config = {
-	saveFile = "BS脚本/UI配置.txt",
-	data = {
-		autoUIEnabled = false,
-		colorInvertEnabled = false
-	},
-	
-	Save = function(self)
-		local json = game:GetService("HttpService"):JSONEncode(self.data)
-		writefile(self.saveFile, json)
-	end,
-	
-	Load = function(self)
-		local success, result = pcall(function()
-			return readfile(self.saveFile)
-		end)
-		
-		if success and result then
-			local success2, data = pcall(function()
-				return game:GetService("HttpService"):JSONDecode(result)
-			end)
-			
-			if success2 and data then
-				self.data = data
-				return true
-			end
-		end
-		return false
-	end
+-- 配置管理
+local configured = {}
+configured.config = {
+	saveFile = "BS脚本/UI配置.txt"
 }
 
--- ==================== 颜色定义 ====================
+-- 创建配置文件夹
+local function ensureConfigFolder()
+	local folder = "BS脚本"
+	if not isfolder(folder) then
+		makefolder(folder)
+	end
+end
+
+-- 加载配置
+local function loadConfig()
+	ensureConfigFolder()
+	if isfile(configured.config.saveFile) then
+		local success, configData = pcall(function()
+			return game:GetService("HttpService"):JSONDecode(readfile(configured.config.saveFile))
+		end)
+		if success and configData then
+			return configData
+		end
+	end
+	return {
+		colorInverted = false,
+		autoUIScale = false
+	}
+end
+
+-- 保存配置
+local function saveConfig(configData)
+	ensureConfigFolder()
+	local success, json = pcall(function()
+		return game:GetService("HttpService"):JSONEncode(configData)
+	end)
+	if success then
+		writefile(configured.config.saveFile, json)
+	end
+end
+
 local Colors = {
 	Primary = Color3.fromRGB(15, 15, 15),
 	Secondary = Color3.fromRGB(30, 30, 30),
@@ -57,22 +65,40 @@ local Colors = {
 	Transparent = 0.25,
 }
 
--- ==================== 反转颜色 ====================
-local InvertedColors = {
-	Primary = Color3.fromRGB(245, 245, 245),
-	Secondary = Color3.fromRGB(255, 255, 255),
-	Accent = Color3.fromRGB(41, 128, 185),
-	Text = Color3.fromRGB(0, 0, 0),
-	Placeholder = Color3.fromRGB(100, 100, 100),
-	White = Color3.fromRGB(0, 0, 0),
-	Transparent = 0.1,
-}
+-- 颜色反转状态
+local colorInverted = false
+local autoUIScaleEnabled = false
 
-local currentColors = Colors  -- 当前使用的颜色表
+-- 更新所有UI颜色的函数
+local function updateAllColors(parent)
+	for _, obj in pairs(parent:GetDescendants()) do
+		if obj:IsA("GuiObject") then
+			if obj.BackgroundColor3 == Colors.Primary then
+				obj.BackgroundColor3 = Colors.Primary
+			elseif obj.BackgroundColor3 == Colors.Secondary then
+				obj.BackgroundColor3 = Colors.Secondary
+			elseif obj.BackgroundColor3 == Colors.Accent then
+				obj.BackgroundColor3 = Colors.Accent
+			end
+			if obj:IsA("TextBox") or obj:IsA("TextLabel") or obj:IsA("TextButton") then
+				if obj.TextColor3 == Colors.Text then
+					obj.TextColor3 = Colors.Text
+				end
+				if obj.PlaceholderColor3 == Colors.Placeholder then
+					obj.PlaceholderColor3 = Colors.Placeholder
+				end
+			end
+			if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+				if obj.ImageColor3 == Colors.Text then
+					obj.ImageColor3 = Colors.Text
+				end
+			end
+		end
+	end
+end
 
 local function CreateGlassEffect(instance, transparency)
-	instance.BackgroundTransparency = transparency or currentColors.Transparent
-	
+	instance.BackgroundTransparency = transparency or Colors.Transparent
 	if not instance:FindFirstChild("GlassEffect") then
 		local blur = Instance.new("ImageLabel")
 		blur.Name = "GlassEffect"
@@ -99,13 +125,13 @@ function Ripple(obj)
 		local Ripple = Instance.new("ImageLabel")
 		Ripple.Name = "Ripple"
 		Ripple.Parent = obj
-		Ripple.BackgroundColor3 = currentColors.White
+		Ripple.BackgroundColor3 = Colors.White
 		Ripple.BackgroundTransparency = 1.000
 		Ripple.ZIndex = 8
 		Ripple.Image = "rbxassetid://2708891598"
 		Ripple.ImageTransparency = 0.800
 		Ripple.ScaleType = Enum.ScaleType.Fit
-		Ripple.ImageColor3 = currentColors.White
+		Ripple.ImageColor3 = Colors.White
 		Ripple.Position = UDim2.new(
 			(mouse.X - Ripple.AbsolutePosition.X) / obj.AbsoluteSize.X,
 			0,
@@ -156,99 +182,7 @@ function drag(frame, hold)
 	end)
 end
 
--- ==================== 应用颜色到所有UI ====================
-local function ApplyColorsToAll(isInverted)
-	local dogent = services.CoreGui:FindFirstChild("REN")
-	if not dogent then return end
-	
-	local Main = dogent:FindFirstChild("Main")
-	if not Main then return end
-	
-	-- 根据状态切换颜色表
-	currentColors = isInverted and InvertedColors or Colors
-	
-	local function applyColors(obj)
-		if not obj then return end
-		
-		if obj:IsA("GuiObject") then
-			if obj.Name == "Main" then
-				obj.BackgroundColor3 = currentColors.Primary
-				obj.BackgroundTransparency = currentColors.Transparent
-			elseif obj.Name == "TitleBar" or obj.Name == "Section" then
-				obj.BackgroundColor3 = currentColors.Secondary
-				obj.BackgroundTransparency = currentColors.Transparent
-			elseif obj.Name == "Btn" or obj.Name == "ToggleBtn" or obj.Name == "KeybindBtn" or obj.Name == "TextboxBack" or obj.Name == "SliderBack" or obj.Name == "DropdownTop" then
-				obj.BackgroundColor3 = currentColors.Secondary
-				obj.BackgroundTransparency = 0.3
-			elseif obj.Name == "BoxBG" or obj.Name == "KeybindValue" or obj.Name == "SliderValBG" then
-				obj.BackgroundColor3 = currentColors.Primary
-				obj.BackgroundTransparency = 0.5
-			elseif obj.Name == "ToggleDisable" then
-				obj.BackgroundColor3 = currentColors.Primary
-				obj.BackgroundTransparency = 0.5
-			elseif obj.Name == "SliderBar" then
-				obj.BackgroundColor3 = currentColors.Primary
-				obj.BackgroundTransparency = 0.5
-			elseif obj.Name == "SliderPart" then
-				obj.BackgroundColor3 = currentColors.Accent
-			end
-			
-			if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
-				if obj.Text ~= "+" and obj.Text ~= "-" and obj.Text ~= "×" then
-					obj.TextColor3 = currentColors.Text
-				end
-				if obj:IsA("TextBox") and obj.PlaceholderText ~= "" then
-					obj.PlaceholderColor3 = currentColors.Placeholder
-				end
-			end
-			
-			if obj:IsA("ImageLabel") and obj.Name ~= "GlassEffect" and obj.Name ~= "DropShadow" then
-				obj.ImageColor3 = currentColors.Text
-			end
-		end
-		
-		for _, child in ipairs(obj:GetChildren()) do
-			applyColors(child)
-		end
-	end
-	
-	applyColors(Main)
-	
-	-- 更新标题渐变
-	local TitleGradient = Main:FindFirstChild("TitleBar"):FindFirstChild("ScriptTitle"):FindFirstChild("UIGradient")
-	if TitleGradient then
-		local accentColor = currentColors.Accent
-		local h, s, v = accentColor:ToHSV()
-		TitleGradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0.00, accentColor),
-			ColorSequenceKeypoint.new(0.50, Color3.fromHSV(h, math.min(s + 0.2, 1), v * 0.8)),
-			ColorSequenceKeypoint.new(1.00, Color3.fromHSV(h, math.min(s + 0.3, 1), v * 0.6)),
-		})
-	end
-end
-
--- ==================== 自动UI适配 ====================
-local function ApplyAutoUI()
-	local viewportSize = services.Workspace.CurrentCamera.ViewportSize
-	local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080)
-	
-	local dogent = services.CoreGui:FindFirstChild("REN")
-	if not dogent then return end
-	
-	local Main = dogent:FindFirstChild("Main")
-	if not Main then return end
-	
-	local targetWidth = math.floor(650 * scale)
-	local targetHeight = math.floor(400 * scale)
-	
-	Main.Size = UDim2.new(0, targetWidth, 0, targetHeight)
-	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-end
-
-function library.new(library, name)
-	-- 加载配置
-	Config:Load()
-	
+function library.new(library, name, theme)
 	for _, v in next, services.CoreGui:GetChildren() do
 		if v.Name == "REN" then
 			v:Destroy()
@@ -267,7 +201,7 @@ function library.new(library, name)
 	Main.Name = "Main"
 	Main.Parent = dogent
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
-	Main.BackgroundColor3 = currentColors.Primary
+	Main.BackgroundColor3 = Colors.Primary
 	Main.Size = UDim2.new(0, 650, 0, 400)
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 	Main.ZIndex = 1
@@ -281,7 +215,7 @@ function library.new(library, name)
 	MainC.Parent = Main
 	
 	local MainStroke = Instance.new("UIStroke")
-	MainStroke.Color = currentColors.Secondary
+	MainStroke.Color = Colors.Secondary
 	MainStroke.Thickness = 1
 	MainStroke.Transparency = 0.5
 	MainStroke.Parent = Main
@@ -302,59 +236,62 @@ function library.new(library, name)
 	DropShadow.Size = UDim2.new(1, 47, 1, 47)
 	DropShadow.ZIndex = 0
 	DropShadow.Image = "rbxassetid://6015897843"
-	DropShadow.ImageColor3 = currentColors.Primary
+	DropShadow.ImageColor3 = Colors.Primary
 	DropShadow.ImageTransparency = 0.7
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- ==================== 控制按钮 ====================
-	-- 颜色反转按钮（最左边）
+	-- 颜色反转按钮
 	local ColorInvertBtn = Instance.new("TextButton")
 	ColorInvertBtn.Name = "ColorInvertBtn"
-	ColorInvertBtn.Parent = TitleBar
-	ColorInvertBtn.BackgroundColor3 = currentColors.Secondary
-	ColorInvertBtn.BackgroundTransparency = currentColors.Transparent
+	ColorInvertBtn.Parent = Main
+	ColorInvertBtn.BackgroundColor3 = Colors.Secondary
+	ColorInvertBtn.BackgroundTransparency = Colors.Transparent
 	ColorInvertBtn.Position = UDim2.new(1, -95, 0, 10)
 	ColorInvertBtn.Size = UDim2.new(0, 25, 0, 25)
 	ColorInvertBtn.Font = Enum.Font.GothamBold
-	ColorInvertBtn.Text = "I"
-	ColorInvertBtn.TextColor3 = currentColors.Text
-	ColorInvertBtn.TextSize = 14
+	ColorInvertBtn.Text = "◐"
+	ColorInvertBtn.TextColor3 = Colors.Text
+	ColorInvertBtn.TextSize = 16
 	ColorInvertBtn.ZIndex = 10
 	
 	local ColorInvertBtnC = Instance.new("UICorner")
 	ColorInvertBtnC.CornerRadius = UDim.new(0, 6)
 	ColorInvertBtnC.Parent = ColorInvertBtn
 	
-	-- 自动UI按钮
-	local AutoUIBtn = Instance.new("TextButton")
-	AutoUIBtn.Name = "AutoUIBtn"
-	AutoUIBtn.Parent = TitleBar
-	AutoUIBtn.BackgroundColor3 = currentColors.Secondary
-	AutoUIBtn.BackgroundTransparency = currentColors.Transparent
-	AutoUIBtn.Position = UDim2.new(1, -65, 0, 10)
-	AutoUIBtn.Size = UDim2.new(0, 25, 0, 25)
-	AutoUIBtn.Font = Enum.Font.GothamBold
-	AutoUIBtn.Text = "A"
-	AutoUIBtn.TextColor3 = currentColors.Text
-	AutoUIBtn.TextSize = 14
-	AutoUIBtn.ZIndex = 10
+	CreateGlassEffect(ColorInvertBtn)
 	
-	local AutoUIBtnC = Instance.new("UICorner")
-	AutoUIBtnC.CornerRadius = UDim.new(0, 6)
-	AutoUIBtnC.Parent = AutoUIBtn
+	-- 自动UI按钮
+	local AutoUIScaleBtn = Instance.new("TextButton")
+	AutoUIScaleBtn.Name = "AutoUIScaleBtn"
+	AutoUIScaleBtn.Parent = Main
+	AutoUIScaleBtn.BackgroundColor3 = Colors.Secondary
+	AutoUIScaleBtn.BackgroundTransparency = Colors.Transparent
+	AutoUIScaleBtn.Position = UDim2.new(1, -65, 0, 10)
+	AutoUIScaleBtn.Size = UDim2.new(0, 25, 0, 25)
+	AutoUIScaleBtn.Font = Enum.Font.GothamBold
+	AutoUIScaleBtn.Text = "A"
+	AutoUIScaleBtn.TextColor3 = Colors.Text
+	AutoUIScaleBtn.TextSize = 14
+	AutoUIScaleBtn.ZIndex = 10
+	
+	local AutoUIScaleBtnC = Instance.new("UICorner")
+	AutoUIScaleBtnC.CornerRadius = UDim.new(0, 6)
+	AutoUIScaleBtnC.Parent = AutoUIScaleBtn
+	
+	CreateGlassEffect(AutoUIScaleBtn)
 	
 	-- 关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
-	CloseBtn.Parent = TitleBar
-	CloseBtn.BackgroundColor3 = currentColors.Secondary
-	CloseBtn.BackgroundTransparency = currentColors.Transparent
+	CloseBtn.Parent = Main
+	CloseBtn.BackgroundColor3 = Colors.Secondary
+	CloseBtn.BackgroundTransparency = Colors.Transparent
 	CloseBtn.Position = UDim2.new(1, -35, 0, 10)
 	CloseBtn.Size = UDim2.new(0, 25, 0, 25)
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.Text = "×"
-	CloseBtn.TextColor3 = currentColors.Text
+	CloseBtn.TextColor3 = Colors.Text
 	CloseBtn.TextSize = 20
 	CloseBtn.ZIndex = 10
 	
@@ -366,68 +303,82 @@ function library.new(library, name)
 		dogent:Destroy()
 	end)
 	
-	-- 按钮功能实现
-	local function UpdateButtonState(btn, isActive)
-		if isActive then
-			btn.BackgroundColor3 = currentColors.Accent
-			btn.BackgroundTransparency = 0.5
-		else
-			btn.BackgroundColor3 = currentColors.Secondary
-			btn.BackgroundTransparency = currentColors.Transparent
-		end
-	end
+	-- UIScale 用于自动适配
+	local uiScale = Instance.new("UIScale")
+	uiScale.Parent = Main
+	uiScale.Scale = 1
+	
+	-- 加载配置
+	local config = loadConfig()
 	
 	-- 颜色反转功能
+	local function toggleColorInvert()
+		colorInverted = not colorInverted
+		if colorInverted then
+			Colors.Primary = Color3.fromRGB(255, 255, 255)
+			Colors.Secondary = Color3.fromRGB(240, 240, 240)
+			Colors.Text = Color3.fromRGB(15, 15, 15)
+			ColorInvertBtn.Text = "◑"
+		else
+			Colors.Primary = Color3.fromRGB(15, 15, 15)
+			Colors.Secondary = Color3.fromRGB(30, 30, 30)
+			Colors.Text = Color3.fromRGB(240, 240, 240)
+			ColorInvertBtn.Text = "◐"
+		end
+		updateAllColors(Main)
+		-- 更新stroke颜色
+		MainStroke.Color = Colors.Secondary
+		-- 保存配置
+		config.colorInverted = colorInverted
+		saveConfig(config)
+	end
+	
+	-- 自动UI适配功能
+	local function toggleAutoUIScale()
+		autoUIScaleEnabled = not autoUIScaleEnabled
+		if autoUIScaleEnabled then
+			AutoUIScaleBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+			-- 计算合适的缩放比例
+			local viewportSize = workspace.CurrentCamera.ViewportSize
+			local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080, 1)
+			uiScale.Scale = scale
+		else
+			AutoUIScaleBtn.BackgroundColor3 = Colors.Secondary
+			uiScale.Scale = 1
+		end
+		-- 保存配置
+		config.autoUIScale = autoUIScaleEnabled
+		saveConfig(config)
+	end
+	
+	-- 绑定按钮事件
 	ColorInvertBtn.MouseButton1Click:Connect(function()
 		spawn(function()
 			Ripple(ColorInvertBtn)
 		end)
-		
-		Config.data.colorInvertEnabled = not Config.data.colorInvertEnabled
-		ApplyColorsToAll(Config.data.colorInvertEnabled)
-		UpdateButtonState(ColorInvertBtn, Config.data.colorInvertEnabled)
-		Config:Save()
+		toggleColorInvert()
 	end)
 	
-	-- 自动UI功能
-	AutoUIBtn.MouseButton1Click:Connect(function()
+	AutoUIScaleBtn.MouseButton1Click:Connect(function()
 		spawn(function()
-			Ripple(AutoUIBtn)
+			Ripple(AutoUIScaleBtn)
 		end)
-		
-		Config.data.autoUIEnabled = not Config.data.autoUIEnabled
-		
-		if Config.data.autoUIEnabled then
-			ApplyAutoUI()
-			services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ApplyAutoUI)
-		else
-			Main.Size = UDim2.new(0, 650, 0, 400)
-			services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() end)
-		end
-		
-		UpdateButtonState(AutoUIBtn, Config.data.autoUIEnabled)
-		Config:Save()
+		toggleAutoUIScale()
 	end)
 	
-	-- 应用保存的配置
-	UpdateButtonState(ColorInvertBtn, Config.data.colorInvertEnabled)
-	UpdateButtonState(AutoUIBtn, Config.data.autoUIEnabled)
-	
-	if Config.data.colorInvertEnabled then
-		ApplyColorsToAll(true)
+	-- 根据配置初始化状态
+	if config.colorInverted then
+		toggleColorInvert()
+	end
+	if config.autoUIScale then
+		toggleAutoUIScale()
 	end
 	
-	if Config.data.autoUIEnabled then
-		ApplyAutoUI()
-		services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ApplyAutoUI)
-	end
-	
-	-- ==================== 其余UI代码 ====================
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Name = "TitleBar"
 	TitleBar.Parent = Main
-	TitleBar.BackgroundColor3 = currentColors.Secondary
-	TitleBar.BackgroundTransparency = currentColors.Transparent
+	TitleBar.BackgroundColor3 = Colors.Secondary
+	TitleBar.BackgroundTransparency = Colors.Transparent
 	TitleBar.Size = UDim2.new(1, 0, 0, 45)
 	
 	local TitleBarC = Instance.new("UICorner")
@@ -439,20 +390,18 @@ function library.new(library, name)
 	Title.Parent = TitleBar
 	Title.BackgroundTransparency = 1
 	Title.Position = UDim2.new(0, 15, 0, 0)
-	Title.Size = UDim2.new(1, -120, 1, 0)  -- 为按钮留出空间
+	Title.Size = UDim2.new(1, -30, 1, 0)
 	Title.Font = Enum.Font.GothamBlack
 	Title.Text = name
-	Title.TextColor3 = currentColors.Text
+	Title.TextColor3 = Colors.Text
 	Title.TextSize = 18
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	
 	local TitleGradient = Instance.new("UIGradient")
-	local accentColor = currentColors.Accent
-	local h, s, v = accentColor:ToHSV()
 	TitleGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0.00, accentColor),
-		ColorSequenceKeypoint.new(0.50, Color3.fromHSV(h, math.min(s + 0.2, 1), v * 0.8)),
-		ColorSequenceKeypoint.new(1.00, Color3.fromHSV(h, math.min(s + 0.3, 1), v * 0.6)),
+		ColorSequenceKeypoint.new(0.00, Color3.fromRGB(52, 152, 219)),
+		ColorSequenceKeypoint.new(0.50, Color3.fromRGB(41, 128, 185)),
+		ColorSequenceKeypoint.new(1.00, Color3.fromRGB(31, 97, 141)),
 	})
 	TitleGradient.Parent = Title
 	
@@ -467,8 +416,8 @@ function library.new(library, name)
 	local SearchBar = Instance.new("Frame")
 	SearchBar.Name = "SearchBar"
 	SearchBar.Parent = Main
-	SearchBar.BackgroundColor3 = currentColors.Secondary
-	SearchBar.BackgroundTransparency = currentColors.Transparent
+	SearchBar.BackgroundColor3 = Colors.Secondary
+	SearchBar.BackgroundTransparency = Colors.Transparent
 	SearchBar.Position = UDim2.new(0, 15, 0, 55)
 	SearchBar.Size = UDim2.new(1, -30, 0, 35)
 	
@@ -487,7 +436,7 @@ function library.new(library, name)
 	SearchIcon.Image = "rbxassetid://3926305904"
 	SearchIcon.ImageRectOffset = Vector2.new(964, 324)
 	SearchIcon.ImageRectSize = Vector2.new(36, 36)
-	SearchIcon.ImageColor3 = currentColors.Placeholder
+	SearchIcon.ImageColor3 = Colors.Placeholder
 	
 	local SearchBox = Instance.new("TextBox")
 	SearchBox.Name = "SearchBox"
@@ -498,8 +447,8 @@ function library.new(library, name)
 	SearchBox.Font = Enum.Font.Gotham
 	SearchBox.PlaceholderText = "搜索标签页或功能..."
 	SearchBox.Text = ""
-	SearchBox.TextColor3 = currentColors.Text
-	SearchBox.PlaceholderColor3 = currentColors.Placeholder
+	SearchBox.TextColor3 = Colors.Text
+	SearchBox.PlaceholderColor3 = Colors.Placeholder
 	SearchBox.TextSize = 14
 	SearchBox.ClearTextOnFocus = false
 	
@@ -513,8 +462,8 @@ function library.new(library, name)
 	local SideBar = Instance.new("Frame")
 	SideBar.Name = "SideBar"
 	SideBar.Parent = Content
-	SideBar.BackgroundColor3 = currentColors.Secondary
-	SideBar.BackgroundTransparency = currentColors.Transparent
+	SideBar.BackgroundColor3 = Colors.Secondary
+	SideBar.BackgroundTransparency = Colors.Transparent
 	SideBar.Size = UDim2.new(0, 140, 1, 0)
 	
 	local SideBarC = Instance.new("UICorner")
@@ -533,7 +482,7 @@ function library.new(library, name)
 	TabButtons.Size = UDim2.new(1, -10, 1, -10)
 	TabButtons.CanvasSize = UDim2.new(0, 0, 0, 0)
 	TabButtons.ScrollBarThickness = 2
-	TabButtons.ScrollBarImageColor3 = currentColors.Secondary
+	TabButtons.ScrollBarImageColor3 = Colors.Secondary
 	
 	local TabButtonsL = Instance.new("UIListLayout")
 	TabButtonsL.Name = "TabBtsL"
@@ -555,13 +504,13 @@ function library.new(library, name)
 	local Open = Instance.new("TextButton")
 	Open.Name = "Open"
 	Open.Parent = dogent
-	Open.BackgroundColor3 = currentColors.Primary
-	Open.BackgroundTransparency = currentColors.Transparent
+	Open.BackgroundColor3 = Colors.Primary
+	Open.BackgroundTransparency = Colors.Transparent
 	Open.Position = UDim2.new(0.01, 0, 0.3, 0)
 	Open.Size = UDim2.new(0, 70, 0, 35)
 	Open.Font = Enum.Font.GothamBold
 	Open.Text = "打开"
-	Open.TextColor3 = currentColors.Text
+	Open.TextColor3 = Colors.Text
 	Open.TextSize = 14
 	Open.Active = true
 	Open.Draggable = true
@@ -574,7 +523,7 @@ function library.new(library, name)
 	CreateGlassEffect(Open)
 	
 	local OpenStroke = Instance.new("UIStroke")
-	OpenStroke.Color = currentColors.Secondary
+	OpenStroke.Color = Colors.Secondary
 	OpenStroke.Thickness = 1
 	OpenStroke.Transparency = 0.5
 	OpenStroke.Parent = Open
@@ -649,11 +598,11 @@ function library.new(library, name)
 		switchingTabs = false
 	end
 	
-	function window:Tab(name, icon)
+	function window.Tab(window, name, icon)
 		local tabButton = Instance.new("Frame")
 		tabButton.Name = "TabButton"
 		tabButton.Parent = TabButtons
-		tabButton.BackgroundColor3 = currentColors.Secondary
+		tabButton.BackgroundColor3 = Colors.Secondary
 		tabButton.BackgroundTransparency = 0.3
 		tabButton.Size = UDim2.new(1, 0, 0, 40)
 		
@@ -670,7 +619,7 @@ function library.new(library, name)
 		tabIcon.Position = UDim2.new(0, 10, 0.5, -12)
 		tabIcon.Size = UDim2.new(0, 24, 0, 24)
 		tabIcon.Image = ("rbxassetid://%s"):format(icon or 4370341699)
-		tabIcon.ImageColor3 = currentColors.Text
+		tabIcon.ImageColor3 = Colors.Text
 		
 		local tabText = Instance.new("TextLabel")
 		tabText.Name = "TabText"
@@ -680,7 +629,7 @@ function library.new(library, name)
 		tabText.Size = UDim2.new(1, -50, 1, 0)
 		tabText.Font = Enum.Font.GothamSemibold
 		tabText.Text = name
-		tabText.TextColor3 = currentColors.Text
+		tabText.TextColor3 = Colors.Text
 		tabText.TextSize = 14
 		tabText.TextXAlignment = Enum.TextXAlignment.Left
 		
@@ -738,12 +687,12 @@ function library.new(library, name)
 		local tab = {}
 		tab._info = tabInfo
 		
-		function tab:Section(name, TabVal)
+		function tab.section(tab, name, TabVal)
 			local Section = Instance.new("Frame")
 			Section.Name = "Section"
 			Section.Parent = tabFrame
-			Section.BackgroundColor3 = currentColors.Secondary
-			Section.BackgroundTransparency = currentColors.Transparent
+			Section.BackgroundColor3 = Colors.Secondary
+			Section.BackgroundTransparency = Colors.Transparent
 			Section.BorderSizePixel = 0
 			Section.ClipsDescendants = true
 			Section.Size = UDim2.new(0.975, 0, 0, 42)
@@ -755,7 +704,7 @@ function library.new(library, name)
 			SectionC.Parent = Section
 			
 			local SectionStroke = Instance.new("UIStroke")
-			SectionStroke.Color = currentColors.Primary
+			SectionStroke.Color = Colors.Primary
 			SectionStroke.Thickness = 1
 			SectionStroke.Transparency = 0.5
 			SectionStroke.Parent = Section
@@ -768,7 +717,7 @@ function library.new(library, name)
 			SectionText.Size = UDim2.new(1, -45, 0, 42)
 			SectionText.Font = Enum.Font.GothamBold
 			SectionText.Text = name
-			SectionText.TextColor3 = currentColors.Text
+			SectionText.TextColor3 = Colors.Text
 			SectionText.TextSize = 16
 			SectionText.TextXAlignment = Enum.TextXAlignment.Left
 			
@@ -780,7 +729,7 @@ function library.new(library, name)
 			SectionOpen.Position = UDim2.new(0, -30, 0, 8)
 			SectionOpen.Size = UDim2.new(0, 26, 0, 26)
 			SectionOpen.Image = "http://www.roblox.com/asset/?id=6031302934"
-			SectionOpen.ImageColor3 = currentColors.Text
+			SectionOpen.ImageColor3 = Colors.Text
 			
 			local SectionOpened = Instance.new("ImageLabel")
 			SectionOpened.Name = "SectionOpened"
@@ -790,7 +739,7 @@ function library.new(library, name)
 			SectionOpened.Size = UDim2.new(0, 26, 0, 26)
 			SectionOpened.Image = "http://www.roblox.com/asset/?id=6031302932"
 			SectionOpened.ImageTransparency = 1.000
-			SectionOpened.ImageColor3 = currentColors.Text
+			SectionOpened.ImageColor3 = Colors.Text
 			
 			local SectionToggle = Instance.new("ImageButton")
 			SectionToggle.Name = "SectionToggle"
@@ -835,7 +784,7 @@ function library.new(library, name)
 			
 			local section = {}
 			
-			function section:Button(text, callback)
+			function section.Button(section, text, callback)
 				local callback = callback or function() end
 				table.insert(tab._info.searchableComponents, text)
 				local BtnModule = Instance.new("Frame")
@@ -847,14 +796,14 @@ function library.new(library, name)
 				local Btn = Instance.new("TextButton")
 				Btn.Name = "Btn"
 				Btn.Parent = BtnModule
-				Btn.BackgroundColor3 = currentColors.Secondary
+				Btn.BackgroundColor3 = Colors.Secondary
 				Btn.BackgroundTransparency = 0.3
 				Btn.Size = UDim2.new(1, 0, 1, 0)
 				Btn.AutoButtonColor = false
 				Btn.Font = Enum.Font.GothamSemibold
 				Btn.Text = "   " .. text
-				Btn.TextColor3 = currentColors.Text
-				Btn.TextSize = 15
+				Btn.TextColor3 = Colors.Text
+				BBtn.TextSize = 15
 				Btn.TextXAlignment = Enum.TextXAlignment.Left
 				
 				CreateGlassEffect(Btn)
@@ -881,12 +830,12 @@ function library.new(library, name)
 				
 				local TextLabel = Instance.new("TextLabel")
 				TextLabel.Parent = LabelModule
-				TextLabel.BackgroundColor3 = currentColors.Secondary
+				TextLabel.BackgroundColor3 = Colors.Secondary
 				TextLabel.BackgroundTransparency = 0.3
 				TextLabel.Size = UDim2.new(1, 0, 1, 0)
 				TextLabel.Font = Enum.Font.GothamSemibold
 				TextLabel.Text = text
-				TextLabel.TextColor3 = currentColors.Text
+				TextLabel.TextColor3 = Colors.Text
 				TextLabel.TextSize = 14
 				TextLabel.TextWrapped = true
 				
@@ -899,7 +848,7 @@ function library.new(library, name)
 				return TextLabel
 			end
 			
-			function section:Toggle(text, flag, enabled, callback)
+			function section.Toggle(section, text, flag, enabled, callback)
 				local callback = callback or function() end
 				local enabled = enabled or false
 				assert(text, "No text provided")
@@ -916,13 +865,13 @@ function library.new(library, name)
 				local ToggleBtn = Instance.new("TextButton")
 				ToggleBtn.Name = "ToggleBtn"
 				ToggleBtn.Parent = ToggleModule
-				ToggleBtn.BackgroundColor3 = currentColors.Secondary
+				ToggleBtn.BackgroundColor3 = Colors.Secondary
 				ToggleBtn.BackgroundTransparency = 0.3
 				ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
 				ToggleBtn.AutoButtonColor = false
 				ToggleBtn.Font = Enum.Font.GothamSemibold
 				ToggleBtn.Text = "   " .. text
-				ToggleBtn.TextColor3 = currentColors.Text
+				ToggleBtn.TextColor3 = Colors.Text
 				ToggleBtn.TextSize = 15
 				ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
 				
@@ -935,7 +884,7 @@ function library.new(library, name)
 				local ToggleDisable = Instance.new("Frame")
 				ToggleDisable.Name = "ToggleDisable"
 				ToggleDisable.Parent = ToggleBtn
-				ToggleDisable.BackgroundColor3 = currentColors.Primary
+				ToggleDisable.BackgroundColor3 = Colors.Primary
 				ToggleDisable.BackgroundTransparency = 0.5
 				ToggleDisable.BorderSizePixel = 0
 				ToggleDisable.Position = UDim2.new(1, -45, 0.5, -11)
@@ -944,7 +893,7 @@ function library.new(library, name)
 				local ToggleSwitch = Instance.new("Frame")
 				ToggleSwitch.Name = "ToggleSwitch"
 				ToggleSwitch.Parent = ToggleDisable
-				ToggleSwitch.BackgroundColor3 = currentColors.White
+				ToggleSwitch.BackgroundColor3 = Colors.White
 				ToggleSwitch.Size = UDim2.new(0, 18, 0, 22)
 				
 				local ToggleDisableC = Instance.new("UICorner")
@@ -965,7 +914,7 @@ function library.new(library, name)
 						end
 						Tween(ToggleSwitch, 0.15, "Sine", "Out", {
 							Position = UDim2.new(0, (state and 18 or 0), 0, 0),
-							BackgroundColor3 = state and currentColors.Accent or currentColors.White
+							BackgroundColor3 = state and Color3.fromRGB(52, 152, 219) or Colors.White
 						})
 						library.flags[flag] = state
 						callback(state)
@@ -984,7 +933,7 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			function section:Keybind(text, default, callback)
+			function section.Keybind(section, text, default, callback)
 				local callback = callback or function() end
 				assert(text, "No text provided")
 				assert(default, "No default key provided")
@@ -1025,13 +974,13 @@ function library.new(library, name)
 				local KeybindBtn = Instance.new("TextButton")
 				KeybindBtn.Name = "KeybindBtn"
 				KeybindBtn.Parent = KeybindModule
-				KeybindBtn.BackgroundColor3 = currentColors.Secondary
+				KeybindBtn.BackgroundColor3 = Colors.Secondary
 				KeybindBtn.BackgroundTransparency = 0.3
 				KeybindBtn.Size = UDim2.new(1, 0, 1, 0)
 				KeybindBtn.AutoButtonColor = false
 				KeybindBtn.Font = Enum.Font.GothamSemibold
 				KeybindBtn.Text = "   " .. text
-				KeybindBtn.TextColor3 = currentColors.Text
+				KeybindBtn.TextColor3 = Colors.Text
 				KeybindBtn.TextSize = 15
 				KeybindBtn.TextXAlignment = Enum.TextXAlignment.Left
 				
@@ -1044,14 +993,14 @@ function library.new(library, name)
 				local KeybindValue = Instance.new("TextButton")
 				KeybindValue.Name = "KeybindValue"
 				KeybindValue.Parent = KeybindBtn
-				KeybindValue.BackgroundColor3 = currentColors.Primary
+				KeybindValue.BackgroundColor3 = Colors.Primary
 				KeybindValue.BackgroundTransparency = 0.5
 				KeybindValue.Position = UDim2.new(1, -60, 0.5, -14)
 				KeybindValue.Size = UDim2.new(0, 55, 0, 28)
 				KeybindValue.AutoButtonColor = false
 				KeybindValue.Font = Enum.Font.GothamSemibold
 				KeybindValue.Text = keyTxt
-				KeybindValue.TextColor3 = currentColors.Text
+				KeybindValue.TextColor3 = Colors.Text
 				KeybindValue.TextSize = 14
 				
 				local KeybindValueC = Instance.new("UICorner")
@@ -1103,7 +1052,7 @@ function library.new(library, name)
 				KeybindValue.Size = UDim2.new(0, KeybindValue.TextBounds.X + 30, 0, 28)
 			end
 			
-			function section:Textbox(text, flag, default, callback)
+			function section.Textbox(section, text, flag, default, callback)
 				local callback = callback or function() end
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
@@ -1120,13 +1069,13 @@ function library.new(library, name)
 				local TextboxBack = Instance.new("TextButton")
 				TextboxBack.Name = "TextboxBack"
 				TextboxBack.Parent = TextboxModule
-				TextboxBack.BackgroundColor3 = currentColors.Secondary
+				TextboxBack.BackgroundColor3 = Colors.Secondary
 				TextboxBack.BackgroundTransparency = 0.3
 				TextboxBack.Size = UDim2.new(1, 0, 1, 0)
 				TextboxBack.AutoButtonColor = false
 				TextboxBack.Font = Enum.Font.GothamSemibold
 				TextboxBack.Text = "   " .. text
-				TextboxBack.TextColor3 = currentColors.Text
+				TextboxBack.TextColor3 = Colors.Text
 				TextboxBack.TextSize = 15
 				TextboxBack.TextXAlignment = Enum.TextXAlignment.Left
 				
@@ -1139,7 +1088,7 @@ function library.new(library, name)
 				local BoxBG = Instance.new("TextButton")
 				BoxBG.Name = "BoxBG"
 				BoxBG.Parent = TextboxBack
-				BoxBG.BackgroundColor3 = currentColors.Primary
+				BoxBG.BackgroundColor3 = Colors.Primary
 				BoxBG.BackgroundTransparency = 0.5
 				BoxBG.Position = UDim2.new(1, -100, 0.5, -14)
 				BoxBG.Size = UDim2.new(0, 90, 0, 28)
@@ -1157,8 +1106,8 @@ function library.new(library, name)
 				TextBox.Size = UDim2.new(1, 0, 1, 0)
 				TextBox.Font = Enum.Font.Gotham
 				TextBox.Text = default
-				TextBox.TextColor3 = currentColors.Text
-				TextBox.PlaceholderColor3 = currentColors.Placeholder
+				TextBox.TextColor3 = Colors.Text
+				TextBox.PlaceholderColor3 = Colors.Placeholder
 				TextBox.TextSize = 14
 				TextBox.ClearTextOnFocus = false
 				
@@ -1189,7 +1138,7 @@ function library.new(library, name)
 				BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
 			end
 			
-			function section:Slider(text, flag, default, min, max, precise, callback)
+			function section.Slider(section, text, flag, default, min, max, precise, callback)
 				local callback = callback or function() end
 				local min = min or 1
 				local max = max or 10
@@ -1211,13 +1160,13 @@ function library.new(library, name)
 				local SliderBack = Instance.new("TextButton")
 				SliderBack.Name = "SliderBack"
 				SliderBack.Parent = SliderModule
-				SliderBack.BackgroundColor3 = currentColors.Secondary
+				SliderBack.BackgroundColor3 = Colors.Secondary
 				SliderBack.BackgroundTransparency = 0.3
 				SliderBack.Size = UDim2.new(1, 0, 1, 0)
 				SliderBack.AutoButtonColor = false
 				SliderBack.Font = Enum.Font.GothamSemibold
 				SliderBack.Text = "   " .. text
-				SliderBack.TextColor3 = currentColors.Text
+				SliderBack.TextColor3 = Colors.Text
 				SliderBack.TextSize = 15
 				SliderBack.TextXAlignment = Enum.TextXAlignment.Left
 				
@@ -1231,7 +1180,7 @@ function library.new(library, name)
 				SliderBar.Name = "SliderBar"
 				SliderBar.Parent = SliderBack
 				SliderBar.AnchorPoint = Vector2.new(0, 0.5)
-				SliderBar.BackgroundColor3 = currentColors.Primary
+				SliderBar.BackgroundColor3 = Colors.Primary
 				SliderBar.BackgroundTransparency = 0.5
 				SliderBar.BorderSizePixel = 0
 				SliderBar.Position = UDim2.new(0.5, -60, 0.5, 0)
@@ -1244,7 +1193,7 @@ function library.new(library, name)
 				local SliderPart = Instance.new("Frame")
 				SliderPart.Name = "SliderPart"
 				SliderPart.Parent = SliderBar
-				SliderPart.BackgroundColor3 = currentColors.Accent
+				SliderPart.BackgroundColor3 = Colors.Accent
 				SliderPart.Size = UDim2.new(0.5, 0, 1, 0)
 				
 				local SliderPartC = Instance.new("UICorner")
@@ -1254,7 +1203,7 @@ function library.new(library, name)
 				local SliderValBG = Instance.new("TextButton")
 				SliderValBG.Name = "SliderValBG"
 				SliderValBG.Parent = SliderBack
-				SliderValBG.BackgroundColor3 = currentColors.Primary
+				SliderValBG.BackgroundColor3 = Colors.Primary
 				SliderValBG.BackgroundTransparency = 0.5
 				SliderValBG.Position = UDim2.new(1, -45, 0.5, -14)
 				SliderValBG.Size = UDim2.new(0, 40, 0, 28)
@@ -1273,7 +1222,7 @@ function library.new(library, name)
 				SliderValue.Size = UDim2.new(1, 0, 1, 0)
 				SliderValue.Font = Enum.Font.GothamSemibold
 				SliderValue.Text = tostring(default)
-				SliderValue.TextColor3 = currentColors.Text
+				SliderValue.TextColor3 = Colors.Text
 				SliderValue.TextSize = 14
 				
 				local MinSlider = Instance.new("TextButton")
@@ -1284,7 +1233,7 @@ function library.new(library, name)
 				MinSlider.Size = UDim2.new(0, 20, 0, 20)
 				MinSlider.Font = Enum.Font.GothamBold
 				MinSlider.Text = "-"
-				MinSlider.TextColor3 = currentColors.Text
+				MinSlider.TextColor3 = Colors.Text
 				MinSlider.TextSize = 20
 				
 				local AddSlider = Instance.new("TextButton")
@@ -1296,7 +1245,7 @@ function library.new(library, name)
 				AddSlider.Size = UDim2.new(0, 20, 0, 20)
 				AddSlider.Font = Enum.Font.GothamBold
 				AddSlider.Text = "+"
-				AddSlider.TextColor3 = currentColors.Text
+				AddSlider.TextColor3 = Colors.Text
 				AddSlider.TextSize = 20
 				
 				local funcs = {
@@ -1383,7 +1332,7 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			function section:Dropdown(text, flag, options, callback)
+			function section.Dropdown(section, text, flag, options, callback)
 				local callback = callback or function() end
 				local options = options or {}
 				assert(text, "No text provided")
@@ -1401,7 +1350,7 @@ function library.new(library, name)
 				local DropdownTop = Instance.new("TextButton")
 				DropdownTop.Name = "DropdownTop"
 				DropdownTop.Parent = DropdownModule
-				DropdownTop.BackgroundColor3 = currentColors.Secondary
+				DropdownTop.BackgroundColor3 = Colors.Secondary
 				DropdownTop.BackgroundTransparency = 0.3
 				DropdownTop.Size = UDim2.new(1, 0, 0, 40)
 				DropdownTop.AutoButtonColor = false
@@ -1424,7 +1373,7 @@ function library.new(library, name)
 				DropdownText.Font = Enum.Font.GothamSemibold
 				DropdownText.PlaceholderText = text
 				DropdownText.Text = ""
-				DropdownText.TextColor3 = currentColors.Text
+				DropdownText.TextColor3 = Colors.Text
 				DropdownText.TextSize = 15
 				DropdownText.TextXAlignment = Enum.TextXAlignment.Left
 				DropdownText.ClearTextOnFocus = false
@@ -1438,7 +1387,7 @@ function library.new(library, name)
 				DropdownOpen.Size = UDim2.new(0, 20, 0, 20)
 				DropdownOpen.Font = Enum.Font.GothamBold
 				DropdownOpen.Text = "+"
-				DropdownOpen.TextColor3 = currentColors.Text
+				DropdownOpen.TextColor3 = Colors.Text
 				DropdownOpen.TextSize = 20
 				
 				local DropdownModuleL = Instance.new("UIListLayout")
@@ -1453,13 +1402,13 @@ function library.new(library, name)
 						local Option = Instance.new("TextButton")
 						Option.Name = "Option_" .. option
 						Option.Parent = DropdownModule
-						Option.BackgroundColor3 = currentColors.Secondary
+						Option.BackgroundColor3 = Colors.Secondary
 						Option.BackgroundTransparency = 0.3
 						Option.Size = UDim2.new(1, 0, 0, 32)
 						Option.AutoButtonColor = false
 						Option.Font = Enum.Font.Gotham
 						Option.Text = option
-						Option.TextColor3 = currentColors.Text
+						Option.TextColor3 = Colors.Text
 						Option.TextSize = 14
 						
 						CreateGlassEffect(Option)
