@@ -21,6 +21,12 @@ local ThemeManager = {
 	currentTheme = "Dark",
 	customThemes = {},
 	
+	-- 配置文件
+	config = {
+		saveFile = "BS脚本/UI主题.txt"
+	},
+	
+	-- 12种精美主题
 	Themes = {
 		Dark = {
 			Name = "Dark",
@@ -117,7 +123,147 @@ local ThemeManager = {
 			GlassTransparency = 0.92,
 			StrokeTransparency = 0.6,
 		},
+		
+		Dracula = {
+			Name = "Dracula",
+			Primary = Color3.fromRGB(40, 42, 54),
+			Secondary = Color3.fromRGB(68, 71, 90),
+			Accent = Color3.fromRGB(189, 147, 249),
+			Text = Color3.fromRGB(248, 248, 242),
+			Placeholder = Color3.fromRGB(139, 233, 253),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(80, 250, 123),
+			Warning = Color3.fromRGB(241, 250, 140),
+			Danger = Color3.fromRGB(255, 85, 85),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
+		
+		Monokai = {
+			Name = "Monokai",
+			Primary = Color3.fromRGB(39, 40, 34),
+			Secondary = Color3.fromRGB(73, 72, 62),
+			Accent = Color3.fromRGB(249, 38, 114),
+			Text = Color3.fromRGB(248, 248, 242),
+			Placeholder = Color3.fromRGB(166, 226, 46),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(166, 226, 46),
+			Warning = Color3.fromRGB(253, 151, 31),
+			Danger = Color3.fromRGB(249, 38, 114),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
+		
+		Nord = {
+			Name = "Nord",
+			Primary = Color3.fromRGB(46, 52, 64),
+			Secondary = Color3.fromRGB(59, 66, 82),
+			Accent = Color3.fromRGB(143, 188, 187),
+			Text = Color3.fromRGB(236, 239, 244),
+			Placeholder = Color3.fromRGB(136, 192, 208),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(163, 190, 140),
+			Warning = Color3.fromRGB(235, 203, 139),
+			Danger = Color3.fromRGB(191, 97, 106),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
+		
+		TokyoNight = {
+			Name = "TokyoNight",
+			Primary = Color3.fromRGB(26, 27, 38),
+			Secondary = Color3.fromRGB(41, 42, 56),
+			Accent = Color3.fromRGB(103, 114, 208),
+			Text = Color3.fromRGB(192, 202, 245),
+			Placeholder = Color3.fromRGB(169, 177, 214),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(73, 219, 122),
+			Warning = Color3.fromRGB(255, 170, 89),
+			Danger = Color3.fromRGB(247, 118, 142),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
+		
+		Gruvbox = {
+			Name = "Gruvbox",
+			Primary = Color3.fromRGB(40, 40, 40),
+			Secondary = Color3.fromRGB(60, 56, 54),
+			Accent = Color3.fromRGB(251, 241, 199),
+			Text = Color3.fromRGB(235, 219, 178),
+			Placeholder = Color3.fromRGB(213, 196, 161),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(184, 187, 38),
+			Warning = Color3.fromRGB(250, 189, 47),
+			Danger = Color3.fromRGB(204, 36, 29),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
+		
+		OneDark = {
+			Name = "OneDark",
+			Primary = Color3.fromRGB(40, 44, 52),
+			Secondary = Color3.fromRGB(53, 57, 65),
+			Accent = Color3.fromRGB(97, 175, 239),
+			Text = Color3.fromRGB(171, 178, 191),
+			Placeholder = Color3.fromRGB(152, 195, 121),
+			White = Color3.fromRGB(255, 255, 255),
+			Success = Color3.fromRGB(152, 195, 121),
+			Warning = Color3.fromRGB(229, 192, 123),
+			Danger = Color3.fromRGB(224, 108, 117),
+			Transparent = 0.25,
+			GlassTransparency = 0.95,
+			StrokeTransparency = 0.5,
+		},
 	},
+	
+	-- 保存主题配置
+	SaveTheme = function(self, themeName)
+		if not self.Themes[themeName] then return false end
+		
+		local data = {
+			currentTheme = themeName,
+			timestamp = os.time()
+		}
+		
+		local success, encoded = pcall(function()
+			return game:GetService("HttpService"):JSONEncode(data)
+		end)
+		
+		if not success then return false end
+		
+		pcall(function()
+			if not isfolder("BS脚本") then
+				makefolder("BS脚本")
+			end
+			writefile(self.config.saveFile, encoded)
+		end)
+		
+		return true
+	end,
+	
+	-- 加载主题配置
+	LoadTheme = function(self)
+		local data = nil
+		
+		pcall(function()
+			if isfile(self.config.saveFile) then
+				local content = readfile(self.config.saveFile)
+				data = game:GetService("HttpService"):JSONDecode(content)
+			end
+		end)
+		
+		if data and data.currentTheme and self.Themes[data.currentTheme] then
+			self.currentTheme = data.currentTheme
+			return data.currentTheme
+		end
+		
+		return "Dark" -- 默认主题
+	end,
 	
 	GetColor = function(self, colorName)
 		local theme = self.Themes[self.currentTheme]
@@ -232,27 +378,6 @@ local ThemeManager = {
 		
 		return true
 	end,
-	
-	RegisterCustomTheme = function(self, name, colors)
-		if self.Themes[name] then return false end
-		
-		local requiredColors = {
-			"Primary", "Secondary", "Accent", "Text", "Placeholder", 
-			"White", "Success", "Warning", "Danger", "Transparent",
-			"GlassTransparency", "StrokeTransparency"
-		}
-		
-		for _, colorName in ipairs(requiredColors) do
-			if not colors[colorName] then
-				warn("自定义主题缺少必要颜色: " .. colorName)
-				return false
-			end
-		end
-		
-		self.Themes[name] = colors
-		self.customThemes[name] = colors
-		return true
-	end,
 }
 library.themeManager = ThemeManager
 
@@ -344,8 +469,12 @@ function drag(frame, hold)
 end
 
 function library.new(library, name, themeName)
+	-- 加载保存的主题
+	local savedTheme = ThemeManager:LoadTheme()
 	if themeName and ThemeManager.Themes[themeName] then
 		ThemeManager.currentTheme = themeName
+	elseif savedTheme then
+		ThemeManager.currentTheme = savedTheme
 	end
 	
 	for _, v in next, services.CoreGui:GetChildren() do
@@ -406,6 +535,130 @@ function library.new(library, name, themeName)
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
+	-- ==================== 标题栏主题选择下拉框 ====================
+	local ThemeSelector = Instance.new("Frame")
+	ThemeSelector.Name = "ThemeSelector"
+	ThemeSelector.Parent = Main
+	ThemeSelector.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+	ThemeSelector.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	ThemeSelector.Position = UDim2.new(1, -140, 0, 10)
+	ThemeSelector.Size = UDim2.new(0, 95, 0, 25)
+	ThemeSelector.ZIndex = 10
+	
+	local ThemeSelectorC = Instance.new("UICorner")
+	ThemeSelectorC.CornerRadius = UDim.new(0, 6)
+	ThemeSelectorC.Parent = ThemeSelector
+	
+	CreateGlassEffect(ThemeSelector, nil, ThemeManager.currentTheme)
+	
+	local ThemeDropdownBtn = Instance.new("TextButton")
+	ThemeDropdownBtn.Name = "ThemeDropdownBtn"
+	ThemeDropdownBtn.Parent = ThemeSelector
+	ThemeDropdownBtn.BackgroundTransparency = 1
+	ThemeDropdownBtn.Size = UDim2.new(1, 0, 1, 0)
+	ThemeDropdownBtn.Font = Enum.Font.GothamSemibold
+	ThemeDropdownBtn.Text = ThemeManager.currentTheme
+	ThemeDropdownBtn.TextColor3 = ThemeManager:GetColor("Text")
+	ThemeDropdownBtn.TextSize = 12
+	ThemeDropdownBtn.ZIndex = 11
+	
+	local ThemeDropdownIcon = Instance.new("ImageLabel")
+	ThemeDropdownIcon.Name = "ThemeDropdownIcon"
+	ThemeDropdownIcon.Parent = ThemeDropdownBtn
+	ThemeDropdownIcon.BackgroundTransparency = 1
+	ThemeDropdownIcon.Position = UDim2.new(1, -20, 0.5, -8)
+	ThemeDropdownIcon.Size = UDim2.new(0, 16, 0, 16)
+	ThemeDropdownIcon.Image = "rbxassetid://6031302934"
+	ThemeDropdownIcon.ImageColor3 = ThemeManager:GetColor("Text")
+	ThemeDropdownIcon.ZIndex = 11
+	
+	local ThemeDropdownFrame = Instance.new("ScrollingFrame")
+	ThemeDropdownFrame.Name = "ThemeDropdownFrame"
+	ThemeDropdownFrame.Parent = ThemeSelector
+	ThemeDropdownFrame.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+	ThemeDropdownFrame.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	ThemeDropdownFrame.Position = UDim2.new(0, 0, 1, 5)
+	ThemeDropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+	ThemeDropdownFrame.Visible = false
+	ThemeDropdownFrame.ZIndex = 12
+	ThemeDropdownFrame.ScrollBarThickness = 2
+	ThemeDropdownFrame.ScrollBarImageColor3 = ThemeManager:GetColor("Primary")
+	
+	local ThemeDropdownL = Instance.new("UIListLayout")
+	ThemeDropdownL.Name = "ThemeDropdownL"
+	ThemeDropdownL.Parent = ThemeDropdownFrame
+	ThemeDropdownL.SortOrder = Enum.SortOrder.LayoutOrder
+	ThemeDropdownL.Padding = UDim.new(0, 2)
+	
+	local ThemeDropdownC = Instance.new("UICorner")
+	ThemeDropdownC.CornerRadius = UDim.new(0, 6)
+	ThemeDropdownC.Parent = ThemeDropdownFrame
+	
+	local dropdownOpen = false
+	
+	-- 动态创建主题选项
+	local themeOptions = {}
+	for themeName, themeData in pairs(ThemeManager.Themes) do
+		table.insert(themeOptions, themeName)
+	end
+	table.sort(themeOptions)
+	
+	for _, themeName in ipairs(themeOptions) do
+		local ThemeOption = Instance.new("TextButton")
+		ThemeOption.Name = "ThemeOption_" .. themeName
+		ThemeOption.Parent = ThemeDropdownFrame
+		ThemeOption.BackgroundTransparency = 1
+		ThemeOption.Size = UDim2.new(1, 0, 0, 25)
+		ThemeOption.Font = Enum.Font.Gotham
+		ThemeOption.Text = themeName
+		ThemeOption.TextColor3 = ThemeManager:GetColor("Text")
+		ThemeOption.TextSize = 11
+		ThemeOption.ZIndex = 13
+		
+		ThemeOption.MouseButton1Click:Connect(function()
+			-- 切换主题并自动保存
+			ThemeManager:SetTheme(themeName)
+			ThemeDropdownBtn.Text = themeName
+			ThemeManager:SaveTheme(themeName)
+			
+			-- 关闭下拉框
+			dropdownOpen = false
+			ThemeDropdownFrame.Visible = false
+			Tween(ThemeDropdownFrame, 0.2, "Sine", "Out", {
+				Size = UDim2.new(1, 0, 0, 0)
+			})
+		end)
+	end
+	
+	ThemeDropdownL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		if dropdownOpen then
+			local contentHeight = math.min(ThemeDropdownL.AbsoluteContentSize.Y + 4, 200)
+			ThemeDropdownFrame.CanvasSize = UDim2.new(0, 0, 0, ThemeDropdownL.AbsoluteContentSize.Y + 4)
+			Tween(ThemeDropdownFrame, 0.2, "Sine", "Out", {
+				Size = UDim2.new(1, 0, 0, contentHeight)
+			})
+		end
+	end)
+	
+	ThemeDropdownBtn.MouseButton1Click:Connect(function()
+		dropdownOpen = not dropdownOpen
+		
+		if dropdownOpen then
+			ThemeDropdownFrame.Visible = true
+			local contentHeight = math.min(ThemeDropdownL.AbsoluteContentSize.Y + 4, 200)
+			Tween(ThemeDropdownFrame, 0.2, "Sine", "Out", {
+				Size = UDim2.new(1, 0, 0, contentHeight)
+			})
+		else
+			Tween(ThemeDropdownFrame, 0.2, "Sine", "Out", {
+				Size = UDim2.new(1, 0, 0, 0)
+			}, function()
+				ThemeDropdownFrame.Visible = false
+			end)
+		end
+	end)
+	
+	-- 关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
 	CloseBtn.Parent = Main
@@ -426,6 +679,8 @@ function library.new(library, name, themeName)
 	CloseBtn.MouseButton1Click:Connect(function()
 		dogent:Destroy()
 	end)
+	
+	-- ==================== 其余UI组件保持不变 ====================
 	
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Name = "TitleBar"
@@ -1599,7 +1854,24 @@ function library.new(library, name, themeName)
 	end
 	
 	function window:SetTheme(themeName)
-		return ThemeManager:SetTheme(themeName)
+		local success = ThemeManager:SetTheme(themeName)
+		if success then
+			-- 更新标题栏的主题选择器显示
+			local dogent = services.CoreGui:FindFirstChild("REN")
+			if dogent then
+				local Main = dogent:FindFirstChild("Main")
+				if Main then
+					local ThemeSelector = Main:FindFirstChild("ThemeSelector")
+					if ThemeSelector then
+						local ThemeDropdownBtn = ThemeSelector:FindFirstChild("ThemeDropdownBtn")
+						if ThemeDropdownBtn then
+							ThemeDropdownBtn.Text = themeName
+						end
+					end
+				end
+			end
+		end
+		return success
 	end
 	
 	function window:RegisterCustomTheme(name, colors)
@@ -1610,61 +1882,9 @@ function library.new(library, name, themeName)
 		return ThemeManager.currentTheme
 	end
 	
-	spawn(function()
-		local themeTab = window:Tab("主题管理", 4370341699)
-		local section = themeTab:Section("主题设置")
-		
-		local themeOptions = {}
-		for themeName, _ in pairs(ThemeManager.Themes) do
-			table.insert(themeOptions, themeName)
-		end
-		
-		local themeDropdown = section:Dropdown("选择主题", "currentTheme", themeOptions, function(selected)
-			window:SetTheme(selected)
-		end)
-		
-		local currentThemeLabel = section:Label("当前主题: " .. ThemeManager.currentTheme)
-		
-		section:Label("自定义主题编辑器")
-		
-		local colorPickers = {}
-		local colorNames = {"Primary", "Secondary", "Accent", "Text", "Placeholder"}
-		
-		for _, colorName in ipairs(colorNames) do
-			local colorPicker = section:ColorPicker(colorName .. " 颜色", ThemeManager:GetColor(colorName), function(color)
-			end)
-			colorPickers[colorName] = colorPicker
-		end
-		
-		section:Button("保存为自定义主题", function()
-			local customColors = {
-				Name = "Custom_" .. string.sub(tostring(tick()), 8),
-				Primary = colorPickers["Primary"]:GetColor(),
-				Secondary = colorPickers["Secondary"]:GetColor(),
-				Accent = colorPickers["Accent"]:GetColor(),
-				Text = colorPickers["Text"]:GetColor(),
-				Placeholder = colorPickers["Placeholder"]:GetColor(),
-				White = ThemeManager:GetColor("White"),
-				Success = ThemeManager:GetColor("Success"),
-				Warning = ThemeManager:GetColor("Warning"),
-				Danger = ThemeManager:GetColor("Danger"),
-				Transparent = 0.25,
-				GlassTransparency = 0.95,
-				StrokeTransparency = 0.5,
-			}
-			
-			window:RegisterCustomTheme(customColors.Name, customColors)
-			window:SetTheme(customColors.Name)
-			
-			themeOptions = {}
-			for themeName, _ in pairs(ThemeManager.Themes) do
-				table.insert(themeOptions, themeName)
-			end
-			themeDropdown:SetOptions(themeOptions)
-			
-			currentThemeLabel.Text = "当前主题: " .. customColors.Name
-		end)
-	end)
+	function window:SaveThemeConfig()
+		return ThemeManager:SaveTheme(ThemeManager.currentTheme)
+	end
 	
 	return window
 end
