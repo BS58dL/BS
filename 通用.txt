@@ -13,7 +13,6 @@ local services = setmetatable({}, {
 })
 local mouse = services.Players.LocalPlayer:GetMouse()
 
--- 现代配色方案
 local Colors = {
 	Primary = Color3.fromRGB(15, 15, 15),
 	Secondary = Color3.fromRGB(30, 30, 30),
@@ -21,10 +20,9 @@ local Colors = {
 	Text = Color3.fromRGB(240, 240, 240),
 	Placeholder = Color3.fromRGB(150, 150, 150),
 	White = Color3.fromRGB(255, 255, 255),
-	Transparent = 0.25, -- 统一透明度
+	Transparent = 0.25,
 }
 
--- 玻璃拟态风格函数
 local function CreateGlassEffect(instance, transparency)
 	instance.BackgroundTransparency = transparency or Colors.Transparent
 	if not instance:FindFirstChild("GlassEffect") then
@@ -32,7 +30,7 @@ local function CreateGlassEffect(instance, transparency)
 		blur.Name = "GlassEffect"
 		blur.BackgroundTransparency = 1
 		blur.Size = UDim2.new(1, 0, 1, 0)
-		blur.Image = "rbxassetid://5554237735" -- 噪点纹理
+		blur.Image = "rbxassetid://5554237735"
 		blur.ImageTransparency = 0.95
 		blur.Parent = instance
 	end
@@ -111,7 +109,6 @@ function drag(frame, hold)
 end
 
 function library.new(library, name, theme)
-	-- 清理旧UI
 	for _, v in next, services.CoreGui:GetChildren() do
 		if v.Name == "REN" then
 			v:Destroy()
@@ -126,7 +123,6 @@ function library.new(library, name, theme)
 		syn.protect_gui(dogent)
 	end
 	
-	-- 主窗口
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
 	Main.Parent = dogent
@@ -140,7 +136,6 @@ function library.new(library, name, theme)
 	
 	CreateGlassEffect(Main)
 	
-	-- 主窗口圆角和边框
 	local MainC = Instance.new("UICorner")
 	MainC.CornerRadius = UDim.new(0, 8)
 	MainC.Parent = Main
@@ -151,7 +146,6 @@ function library.new(library, name, theme)
 	MainStroke.Transparency = 0.5
 	MainStroke.Parent = Main
 	
-	-- 阴影效果
 	local DropShadowHolder = Instance.new("Frame")
 	DropShadowHolder.Name = "DropShadowHolder"
 	DropShadowHolder.Parent = Main
@@ -173,7 +167,6 @@ function library.new(library, name, theme)
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- 右上角关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
 	CloseBtn.Parent = Main
@@ -195,7 +188,6 @@ function library.new(library, name, theme)
 		dogent:Destroy()
 	end)
 	
-	-- 标题栏
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Name = "TitleBar"
 	TitleBar.Parent = Main
@@ -219,7 +211,6 @@ function library.new(library, name, theme)
 	Title.TextSize = 18
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	
-	-- 渐变动画
 	local TitleGradient = Instance.new("UIGradient")
 	TitleGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0.00, Color3.fromRGB(52, 152, 219)),
@@ -236,7 +227,6 @@ function library.new(library, name, theme)
 		end
 	end)()
 	
-	-- 搜索功能
 	local SearchBar = Instance.new("Frame")
 	SearchBar.Name = "SearchBar"
 	SearchBar.Parent = Main
@@ -276,7 +266,6 @@ function library.new(library, name, theme)
 	SearchBox.TextSize = 14
 	SearchBox.ClearTextOnFocus = false
 	
-	-- 内容区域
 	local Content = Instance.new("Frame")
 	Content.Name = "Content"
 	Content.Parent = Main
@@ -284,7 +273,6 @@ function library.new(library, name, theme)
 	Content.Position = UDim2.new(0, 0, 0, 100)
 	Content.Size = UDim2.new(1, 0, 1, -100)
 	
-	-- 侧边栏
 	local SideBar = Instance.new("Frame")
 	SideBar.Name = "SideBar"
 	SideBar.Parent = Content
@@ -299,7 +287,7 @@ function library.new(library, name, theme)
 	CreateGlassEffect(SideBar)
 	
 	local TabButtons = Instance.new("ScrollingFrame")
-	TabButtons.Name = "TabBtns"
+	TabButtons.Name = "TabBts"
 	TabButtons.Parent = SideBar
 	TabButtons.Active = true
 	TabButtons.BackgroundTransparency = 1
@@ -310,12 +298,11 @@ function library.new(library, name, theme)
 	TabButtons.ScrollBarThickness = 0
 	
 	local TabButtonsL = Instance.new("UIListLayout")
-	TabButtonsL.Name = "TabBtnsL"
+	TabButtonsL.Name = "TabBtsL"
 	TabButtonsL.Parent = TabButtons
 	TabButtonsL.SortOrder = Enum.SortOrder.LayoutOrder
 	TabButtonsL.Padding = UDim.new(0, 8)
 	
-	-- 主标签区域
 	local TabMain = Instance.new("Frame")
 	TabMain.Name = "TabMain"
 	TabMain.Parent = Content
@@ -323,7 +310,6 @@ function library.new(library, name, theme)
 	TabMain.Position = UDim2.new(0, 145, 0, 0)
 	TabMain.Size = UDim2.new(1, -145, 1, 0)
 	
-	-- 打开按钮
 	local Open = Instance.new("TextButton")
 	Open.Name = "Open"
 	Open.Parent = dogent
@@ -358,14 +344,12 @@ function library.new(library, name, theme)
 		end
 	end)
 	
-	-- UI开关快捷键
 	services.UserInputService.InputEnded:Connect(function(input)
 		if input.KeyCode == Enum.KeyCode.LeftControl then
 			Main.Visible = not Main.Visible
 		end
 	end)
 	
-	-- 搜索过滤功能
 	local allTabs = {}
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local searchText = SearchBox.Text:lower()
@@ -378,7 +362,6 @@ function library.new(library, name, theme)
 		end
 	end)
 	
-	-- 拖拽功能
 	drag(Main, TitleBar)
 	
 	local window = {}
@@ -391,7 +374,7 @@ function library.new(library, name, theme)
 			new.frame.Visible = true
 			library.currentTab = new
 			Tween(new.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0 })
-			Tween(new.button.TextLabel, 0.15, "Sine", "Out", { TextTransparency = 0 })
+			Tween(new.button.TabText, 0.15, "Sine", "Out", { TextTransparency = 0 })
 			return
 		end
 		if old.button == new.button then return end
@@ -401,8 +384,8 @@ function library.new(library, name, theme)
 		
 		Tween(old.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0.3 })
 		Tween(new.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0 })
-		Tween(old.button.TextLabel, 0.15, "Sine", "Out", { TextTransparency = 0.3 })
-		Tween(new.button.TextLabel, 0.15, "Sine", "Out", { TextTransparency = 0 })
+		Tween(old.button.TabText, 0.15, "Sine", "Out", { TextTransparency = 0.3 })
+		Tween(new.button.TabText, 0.15, "Sine", "Out", { TextTransparency = 0 })
 		
 		old.frame.Visible = false
 		new.frame.Visible = true
@@ -453,7 +436,6 @@ function library.new(library, name, theme)
 		tabBtn.Size = UDim2.new(1, 0, 1, 0)
 		tabBtn.Text = ""
 		
-		-- 标签内容
 		local tabFrame = Instance.new("ScrollingFrame")
 		tabFrame.Name = "Tab"
 		tabFrame.Parent = TabMain
@@ -469,7 +451,6 @@ function library.new(library, name, theme)
 		tabL.SortOrder = Enum.SortOrder.LayoutOrder
 		tabL.Padding = UDim.new(0, 8)
 		
-		-- 存储标签信息用于搜索
 		table.insert(allTabs, {
 			name = name,
 			button = tabButton,
@@ -1272,6 +1253,11 @@ function library.new(library, name, theme)
 				funcs:SetOptions(options)
 				return funcs
 			end
+			
+			section.TextBox = section.Textbox
+			section.textbox = section.Textbox
+			section.KeyBind = section.Keybind
+			section.keybind = section.Keybind
 			
 			return section
 		end
