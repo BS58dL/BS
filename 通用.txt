@@ -477,7 +477,7 @@ function library.new(library, name, theme)
 	Open.ZIndex = 100
 	
 	local OpenC = Instance.new("UICorner")
-	OpenC.CornerRadius = UDim.new(0, 17)
+	OpenC.CornerRadius = UDim.new(0, 3)
 	OpenC.Parent = Open
 	
 	CreateGlassEffect(Open)
