@@ -48,6 +48,12 @@ local services = setmetatable({}, {
 })
 local mouse = services.Players.LocalPlayer:GetMouse()
 
+local HighlightColors = {
+	Primary = Color3.fromRGB(74, 144, 226),  
+	Secondary = Color3.fromRGB(91, 155, 213),
+	Accent = Color3.fromRGB(31, 97, 141),    
+}
+
 local Colors = {
 	Primary = Color3.fromRGB(15, 15, 15),
 	Secondary = Color3.fromRGB(30, 30, 30),
@@ -155,6 +161,17 @@ function drag(frame, hold)
 			update(input)
 		end
 	end)
+end
+
+local function highlightText(originalText, searchTerm, color)
+	if searchTerm == "" or not originalText:lower():find(searchTerm:lower(), 1, true) then
+		return originalText
+	end
+	
+	local pattern = searchTerm:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+	local highlighted = originalText:gsub("(" .. pattern .. ")", 
+		'<font color="#4A90E2"><b>%1</b></font>')
+	return highlighted
 end
 
 function library.new(library, name, theme)
@@ -506,23 +523,125 @@ function library.new(library, name, theme)
 	
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local searchText = SearchBox.Text:lower()
-		for i, tabInfo in ipairs(allTabs) do
-			local tabVisible = false
-			if searchText == "" then
-				tabVisible = true
-			else
-				if tabInfo.name:lower():find(searchText, 1, true) then
-					tabVisible = true
-				else
-					for _, componentText in ipairs(tabInfo.searchableComponents or {}) do
-						if componentText:lower():find(searchText, 1, true) then
-							tabVisible = true
-							break
+		
+		if searchText == "" then
+			for _, tabInfo in ipairs(allTabs) do
+				tabInfo.button.Visible = true
+				tabInfo.button.TabText.Text = tabInfo.name 
+				tabInfo.button.TabText.RichText = false
+				
+				for _, sectionInfo in ipairs(tabInfo.sections or {}) do
+					sectionInfo.section.Visible = true
+					sectionInfo.objsFrame.Visible = true
+					sectionInfo.section.SectionText.Text = sectionInfo.name
+					sectionInfo.section.SectionText.RichText = false
+					
+					local ObjsL = sectionInfo.objsFrame:FindFirstChild("ObjsL")
+					if ObjsL then
+						local originalHeight = 42 + ObjsL.AbsoluteContentSize.Y + 10
+						sectionInfo.section.Size = UDim2.new(0.975, 0, 0, originalHeight)
+					end
+					
+					for _, component in ipairs(sectionInfo.objsFrame:GetChildren()) do
+						if component:IsA("Frame") then
+							local textElement = component:FindFirstChildWhichIsA("TextButton") or 
+												component:FindFirstChildWhichIsA("TextLabel")
+							if textElement and sectionInfo.originalTexts then
+								local original = sectionInfo.originalTexts[component]
+								if original then
+									textElement.Text = original
+									textElement.RichText = false
+								end
+							end
 						end
 					end
 				end
 			end
+			
+			if library.currentTab and not library.currentTab.button.Visible then
+				for _, tabInfo in ipairs(allTabs) do
+					if tabInfo.button.Visible then
+						switchTab({
+							button = tabInfo.button,
+							frame = tabInfo.frame
+						})
+						break
+					end
+				end
+			end
+			
+			return
+		end
+		
+		for _, tabInfo in ipairs(allTabs) do
+			local tabVisible = false
+			
+			local tabTextHighlighted = highlightText(tabInfo.name, searchText)
+			tabInfo.button.TabText.Text = tabTextHighlighted
+			tabInfo.button.TabText.RichText = true
+			if tabTextHighlighted ~= tabInfo.name then
+				tabVisible = true
+			end
+			
+			for _, sectionInfo in ipairs(tabInfo.sections or {}) do
+				local sectionVisible = false
+				
+				local sectionTextHighlighted = highlightText(sectionInfo.name, searchText)
+				sectionInfo.section.SectionText.Text = sectionTextHighlighted
+				sectionInfo.section.SectionText.RichText = true
+				if sectionTextHighlighted ~= sectionInfo.name then
+					sectionVisible = true
+					tabVisible = true
+				end
+				
+				sectionInfo.originalTexts = sectionInfo.originalTexts or {}
+				for _, component in ipairs(sectionInfo.objsFrame:GetChildren()) do
+					if component:IsA("Frame") then
+						local textElement = component:FindFirstChildWhichIsA("TextButton") or 
+											component:FindFirstChildWhichIsA("TextLabel")
+						if textElement then
+							if not sectionInfo.originalTexts[component] then
+								sectionInfo.originalTexts[component] = textElement.Text
+							end
+							
+							local originalText = sectionInfo.originalTexts[component]
+							local highlightedText = highlightText(originalText, searchText)
+							
+							if highlightedText ~= originalText then
+								textElement.Text = highlightedText
+								textElement.RichText = true
+								sectionVisible = true
+								tabVisible = true
+							else
+								for _, componentText in ipairs(sectionInfo.components or {}) do
+									if componentText:lower():find(searchText, 1, true) then
+										sectionVisible = true
+										tabVisible = true
+										break
+									end
+								end
+							end
+						end
+					end
+				end
+				
+				sectionInfo.section.Visible = sectionVisible
+				sectionInfo.objsFrame.Visible = sectionVisible
+			end
+			
 			tabInfo.button.Visible = tabVisible
+			
+			if not tabInfo.button.Visible and library.currentTab and library.currentTab.button == tabInfo.button then
+				for _, otherTabInfo in ipairs(allTabs) do
+					if otherTabInfo.button.Visible then
+						switchTab({
+							button = otherTabInfo.button,
+							frame = otherTabInfo.frame
+						})
+						break
+					end
+				end
+			end
 		end
 	end)
 	
@@ -619,7 +738,8 @@ function library.new(library, name, theme)
 			name = name,
 			button = tabButton,
 			frame = tabFrame,
-			searchableComponents = {}
+			searchableComponents = {},
+			sections = {}
 		}
 		table.insert(allTabs, tabInfo)
 		
@@ -742,11 +862,21 @@ function library.new(library, name, theme)
 				Section.Size = UDim2.new(0.975, 0, 0, 42 + ObjsL.AbsoluteContentSize.Y + 10)
 			end)
 			
+			local sectionInfo = {
+				name = name,
+				section = Section,
+				objsFrame = Objs,
+				components = {},
+				originalTexts = {} 
+			}
+			table.insert(tabInfo.sections, sectionInfo)
+			
 			local section = {}
 			
 			function section.Button(section, text, callback)
 				local callback = callback or function() end
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				local BtnModule = Instance.new("Frame")
 				BtnModule.Name = "BtnModule"
 				BtnModule.Parent = Objs
@@ -765,12 +895,15 @@ function library.new(library, name, theme)
 				Btn.TextColor3 = Colors.Text
 				Btn.TextSize = 15
 				Btn.TextXAlignment = Enum.TextXAlignment.Left
+				Btn.RichText = false 
 				
 				CreateGlassEffect(Btn)
 				
 				local BtnC = Instance.new("UICorner")
 				BtnC.CornerRadius = UDim.new(0, 6)
 				BtnC.Parent = Btn
+				
+				sectionInfo.originalTexts[BtnModule] = text
 				
 				Btn.MouseButton1Click:Connect(function()
 					spawn(function()
@@ -781,7 +914,8 @@ function library.new(library, name, theme)
 			end
 			
 			function section:Label(text)
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				local LabelModule = Instance.new("Frame")
 				LabelModule.Name = "LabelModule"
 				LabelModule.Parent = Objs
@@ -798,12 +932,15 @@ function library.new(library, name, theme)
 				TextLabel.TextColor3 = Colors.Text
 				TextLabel.TextSize = 14
 				TextLabel.TextWrapped = true
+				TextLabel.RichText = false 
 				
 				CreateGlassEffect(TextLabel)
 				
 				local LabelC = Instance.new("UICorner")
 				LabelC.CornerRadius = UDim.new(0, 6)
 				LabelC.Parent = TextLabel
+				
+				sectionInfo.originalTexts[LabelModule] = text
 				
 				return TextLabel
 			end
@@ -814,7 +951,8 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				library.flags[flag] = enabled
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				
 				local ToggleModule = Instance.new("Frame")
 				ToggleModule.Name = "ToggleModule"
@@ -834,6 +972,7 @@ function library.new(library, name, theme)
 				ToggleBtn.TextColor3 = Colors.Text
 				ToggleBtn.TextSize = 15
 				ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+				ToggleBtn.RichText = false 
 				
 				CreateGlassEffect(ToggleBtn)
 				
@@ -841,20 +980,22 @@ function library.new(library, name, theme)
 				ToggleBtnC.CornerRadius = UDim.new(0, 6)
 				ToggleBtnC.Parent = ToggleBtn
 				
+				sectionInfo.originalTexts[ToggleModule] = text
+				
 				local ToggleDisable = Instance.new("Frame")
 				ToggleDisable.Name = "ToggleDisable"
 				ToggleDisable.Parent = ToggleBtn
 				ToggleDisable.BackgroundColor3 = Colors.Primary
 				ToggleDisable.BackgroundTransparency = 0.5
 				ToggleDisable.BorderSizePixel = 0
-				ToggleDisable.Position = UDim2.new(1, -38, 0.5, -13) 
-				ToggleDisable.Size = UDim2.new(0, 26, 0, 26)  
+				ToggleDisable.Position = UDim2.new(1, -38, 0.5, -13)
+				ToggleDisable.Size = UDim2.new(0, 26, 0, 26)
 				
 				local ToggleSwitch = Instance.new("Frame")
 				ToggleSwitch.Name = "ToggleSwitch"
 				ToggleSwitch.Parent = ToggleDisable
 				ToggleSwitch.BackgroundColor3 = Colors.White
-				ToggleSwitch.Size = UDim2.new(0, 22, 0, 22) 
+				ToggleSwitch.Size = UDim2.new(0, 22, 0, 22)
 				ToggleSwitch.Position = UDim2.new(0, 2, 0, 2)
 				
 				local ToggleDisableC = Instance.new("UICorner")
@@ -874,7 +1015,7 @@ function library.new(library, name, theme)
 							return
 						end
 						Tween(ToggleSwitch, 0.15, "Sine", "Out", {
-							Position = UDim2.new(0, (state and 2 or 2), 0, 2),  
+							Position = UDim2.new(0, (state and 2 or 2), 0, 2),
 							BackgroundColor3 = state and Color3.fromRGB(52, 152, 219) or Colors.White
 						})
 						library.flags[flag] = state
@@ -924,7 +1065,8 @@ function library.new(library, name, theme)
 				}
 				local bindKey = default
 				local keyTxt = (default and (shortNames[default.Name] or default.Name) or "None")
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				
 				local KeybindModule = Instance.new("Frame")
 				KeybindModule.Name = "KeybindModule"
@@ -944,12 +1086,15 @@ function library.new(library, name, theme)
 				KeybindBtn.TextColor3 = Colors.Text
 				KeybindBtn.TextSize = 15
 				KeybindBtn.TextXAlignment = Enum.TextXAlignment.Left
+				KeybindBtn.RichText = false 
 				
 				CreateGlassEffect(KeybindBtn)
 				
 				local KeybindBtnC = Instance.new("UICorner")
 				KeybindBtnC.CornerRadius = UDim.new(0, 6)
 				KeybindBtnC.Parent = KeybindBtn
+				
+				sectionInfo.originalTexts[KeybindModule] = text
 				
 				local KeybindValue = Instance.new("TextButton")
 				KeybindValue.Name = "KeybindValue"
@@ -1019,7 +1164,8 @@ function library.new(library, name, theme)
 				assert(flag, "No flag provided")
 				assert(default, "No default text provided")
 				library.flags[flag] = default
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				
 				local TextboxModule = Instance.new("Frame")
 				TextboxModule.Name = "TextboxModule"
@@ -1039,6 +1185,7 @@ function library.new(library, name, theme)
 				TextboxBack.TextColor3 = Colors.Text
 				TextboxBack.TextSize = 15
 				TextboxBack.TextXAlignment = Enum.TextXAlignment.Left
+				TextboxBack.RichText = false 
 				
 				CreateGlassEffect(TextboxBack)
 				
@@ -1046,12 +1193,14 @@ function library.new(library, name, theme)
 				TextboxBackC.CornerRadius = UDim.new(0, 6)
 				TextboxBackC.Parent = TextboxBack
 				
+				sectionInfo.originalTexts[TextboxModule] = text
+				
 				local BoxBG = Instance.new("TextButton")
 				BoxBG.Name = "BoxBG"
 				BoxBG.Parent = TextboxBack
 				BoxBG.BackgroundColor3 = Colors.Primary
 				BoxBG.BackgroundTransparency = 0.5
-				BoxBG.Position = UDim2.new(1, -100, 0.5, -14) 
+				BoxBG.Position = UDim2.new(1, -100, 0.5, -14)
 				BoxBG.Size = UDim2.new(0, 90, 0, 28)
 				BoxBG.AutoButtonColor = false
 				BoxBG.Text = ""
@@ -1113,7 +1262,8 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				assert(default, "No default value provided")
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				
 				local SliderModule = Instance.new("Frame")
 				SliderModule.Name = "SliderModule"
@@ -1134,12 +1284,15 @@ function library.new(library, name, theme)
 				SliderBack.TextColor3 = Colors.Text
 				SliderBack.TextSize = 15
 				SliderBack.TextXAlignment = Enum.TextXAlignment.Left
+				SliderBack.RichText = false
 				
 				CreateGlassEffect(SliderBack)
 				
 				local SliderBackC = Instance.new("UICorner")
 				SliderBackC.CornerRadius = UDim.new(0, 6)
 				SliderBackC.Parent = SliderBack
+				
+				sectionInfo.originalTexts[SliderModule] = text
 				
 				local SliderBar = Instance.new("Frame")
 				SliderBar.Name = "SliderBar"
@@ -1303,7 +1456,8 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				library.flags[flag] = nil
-				table.insert(tab._info.searchableComponents, text)
+				table.insert(tabInfo.searchableComponents, text)
+				table.insert(sectionInfo.components, text)
 				
 				local DropdownModule = Instance.new("Frame")
 				DropdownModule.Name = "DropdownModule"
@@ -1322,6 +1476,7 @@ function library.new(library, name, theme)
 				DropdownTop.Font = Enum.Font.GothamSemibold
 				DropdownTop.Text = ""
 				DropdownTop.TextXAlignment = Enum.TextXAlignment.Left
+				DropdownTop.RichText = false
 				
 				CreateGlassEffect(DropdownTop)
 				
@@ -1342,6 +1497,7 @@ function library.new(library, name, theme)
 				DropdownText.TextSize = 15
 				DropdownText.TextXAlignment = Enum.TextXAlignment.Left
 				DropdownText.ClearTextOnFocus = false
+				DropdownText.RichText = false
 				
 				local DropdownOpen = Instance.new("TextButton")
 				DropdownOpen.Name = "DropdownOpen"
@@ -1364,6 +1520,7 @@ function library.new(library, name, theme)
 				local open = false
 				local funcs = {
 					AddOption = function(self, option)
+						table.insert(sectionInfo.components, option)
 						local Option = Instance.new("TextButton")
 						Option.Name = "Option_" .. option
 						Option.Parent = DropdownModule
@@ -1375,12 +1532,15 @@ function library.new(library, name, theme)
 						Option.Text = option
 						Option.TextColor3 = Colors.Text
 						Option.TextSize = 14
+						Option.RichText = false
 						
 						CreateGlassEffect(Option)
 						
 						local OptionC = Instance.new("UICorner")
 						OptionC.CornerRadius = UDim.new(0, 6)
 						OptionC.Parent = Option
+						
+						sectionInfo.originalTexts[Option] = option
 						
 						Option.MouseButton1Click:Connect(function()
 							open = false
