@@ -7,10 +7,8 @@ local toggled = false
 library.currentTab = nil
 library.flags = {}
 
--- 配置保存系统
 local configPath = "BS脚本/UI配置.txt"
 
--- 保存配置函数
 local function saveConfig(config)
 	local success, encoded = pcall(function()
 		return game:GetService("HttpService"):JSONEncode(config)
@@ -27,7 +25,6 @@ local function saveConfig(config)
 	end
 end
 
--- 加载配置函数
 local function loadConfig()
 	if isfile(configPath) then
 		local success, config = pcall(function()
@@ -37,7 +34,6 @@ local function loadConfig()
 			return config
 		end
 	end
-	-- 默认配置
 	return {
 		autoFitScreen = false,
 		windowSize = {650, 400},
@@ -111,7 +107,6 @@ function Ripple(obj)
 	end)
 end
 
--- 自动适配屏幕函数
 local function autoFitUIScreen(mainFrame)
 	local viewportSize = services.Workspace.CurrentCamera.ViewportSize
 	
@@ -221,13 +216,12 @@ function library.new(library, name, theme)
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- 新增：自动适配屏幕按钮
 	local AutoFitBtn = Instance.new("ImageButton")
 	AutoFitBtn.Name = "AutoFitBtn"
 	AutoFitBtn.Parent = Main
 	AutoFitBtn.BackgroundColor3 = Colors.Secondary
 	AutoFitBtn.BackgroundTransparency = Colors.Transparent
-	AutoFitBtn.Position = UDim2.new(1, -65, 0, 10)
+	AutoFitBtn.Position = UDim2.new(1, -95, 0, 10)
 	AutoFitBtn.Size = UDim2.new(0, 25, 0, 25)
 	AutoFitBtn.Image = "rbxassetid://3926305904"
 	AutoFitBtn.ImageRectOffset = Vector2.new(244, 164)
@@ -240,6 +234,25 @@ function library.new(library, name, theme)
 	AutoFitBtnC.Parent = AutoFitBtn
 	
 	CreateGlassEffect(AutoFitBtn)
+	
+	local ScaleBtn = Instance.new("ImageButton")
+	ScaleBtn.Name = "ScaleBtn"
+	ScaleBtn.Parent = Main
+	ScaleBtn.BackgroundColor3 = Colors.Secondary
+	ScaleBtn.BackgroundTransparency = Colors.Transparent
+	ScaleBtn.Position = UDim2.new(1, -65, 0, 10)
+	ScaleBtn.Size = UDim2.new(0, 25, 0, 25)
+	ScaleBtn.Image = "rbxassetid://3926305904"
+	ScaleBtn.ImageRectOffset = Vector2.new(324, 364)
+	ScaleBtn.ImageRectSize = Vector2.new(36, 36)
+	ScaleBtn.ImageColor3 = Colors.Text
+	ScaleBtn.ZIndex = 10
+	
+	local ScaleBtnC = Instance.new("UICorner")
+	ScaleBtnC.CornerRadius = UDim.new(0, 6)
+	ScaleBtnC.Parent = ScaleBtn
+	
+	CreateGlassEffect(ScaleBtn)
 	
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
@@ -262,30 +275,15 @@ function library.new(library, name, theme)
 		dogent:Destroy()
 	end)
 	
-	-- 加载配置
 	local currentConfig = loadConfig()
 	local autoFitEnabled = currentConfig.autoFitScreen
 	
-	-- 如果开启了自动适配，立即应用
 	if autoFitEnabled then
 		autoFitUIScreen(Main)
 	end
 	
-	-- 创建UI状态值显示
-	local statusOverlay = Instance.new("TextLabel")
-	statusOverlay.Name = "StatusOverlay"
-	statusOverlay.Parent = Main
-	statusOverlay.BackgroundTransparency = 1
-	statusOverlay.Position = UDim2.new(0, 15, 0, 15)
-	statusOverlay.Size = UDim2.new(0, 200, 0, 20)
-	statusOverlay.Font = Enum.Font.Gotham
-	statusOverlay.Text = autoFitEnabled and "已启用自动适配" or ""
-	statusOverlay.TextColor3 = Colors.Accent
-	statusOverlay.TextSize = 12
-	statusOverlay.TextXAlignment = Enum.TextXAlignment.Left
-	statusOverlay.ZIndex = 5
+	local scaleEnabled = false
 	
-	-- 自动适配按钮点击事件
 	AutoFitBtn.MouseButton1Click:Connect(function()
 		spawn(function()
 			Ripple(AutoFitBtn)
@@ -293,35 +291,41 @@ function library.new(library, name, theme)
 		
 		autoFitEnabled = not autoFitEnabled
 		
-		-- 应用适配
 		if autoFitEnabled then
 			autoFitUIScreen(Main)
-			-- 更新状态显示
 			Tween(AutoFitBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Accent })
 			Tween(AutoFitBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0 })
-			
-			-- 显示状态
-			statusOverlay.Text = "已启用自动适配"
-			Tween(statusOverlay, 0.3, "Sine", "Out", { TextTransparency = 0 })
 		else
-			-- 恢复默认大小
 			Main.Size = UDim2.new(0, 650, 0, 400)
 			Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-			
-			-- 更新状态
 			Tween(AutoFitBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Text })
 			Tween(AutoFitBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0.3 })
-			
-			-- 隐藏状态
-			Tween(statusOverlay, 0.3, "Sine", "Out", { TextTransparency = 1 })
 		end
 		
-		-- 保存配置
 		currentConfig.autoFitScreen = autoFitEnabled
 		saveConfig(currentConfig)
 	end)
 	
-	-- 初始化按钮状态
+	ScaleBtn.MouseButton1Click:Connect(function()
+		spawn(function()
+			Ripple(ScaleBtn)
+		end)
+		
+		scaleEnabled = not scaleEnabled
+		
+		if scaleEnabled then
+			Main.Size = UDim2.new(0, 325, 0, 200)
+			Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+			Tween(ScaleBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Accent })
+			Tween(ScaleBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0 })
+		else
+			Main.Size = UDim2.new(0, 650, 0, 400)
+			Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+			Tween(ScaleBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Text })
+			Tween(ScaleBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0.3 })
+		end
+	end)
+	
 	if autoFitEnabled then
 		AutoFitBtn.ImageColor3 = Colors.Accent
 		AutoFitBtn.BackgroundTransparency = 0
