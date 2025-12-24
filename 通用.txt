@@ -6,8 +6,6 @@ local library = {}
 local toggled = false
 library.currentTab = nil
 library.flags = {}
-library.themeManager = {}
-
 local services = setmetatable({}, {
 	__index = function(t, k)
 		return game.GetService(game, k)
@@ -16,393 +14,64 @@ local services = setmetatable({}, {
 
 local mouse = services.Players.LocalPlayer:GetMouse()
 
--- ==================== 主题系统核心（修复版） ====================
-local ThemeManager = {
-	currentTheme = "Dark",
-	config = {
-		saveFile = "BS脚本/UI主题.txt"
+-- ==================== 配置系统 ====================
+local Config = {
+	saveFile = "BS脚本/UI配置.txt",
+	data = {
+		autoUIEnabled = false,
+		colorInvertEnabled = false
 	},
 	
-	-- 12个预设主题
-	Themes = {
-		Dark = {
-			Name = "Dark",
-			Primary = Color3.fromRGB(15, 15, 15),
-			Secondary = Color3.fromRGB(30, 30, 30),
-			Accent = Color3.fromRGB(52, 152, 219),
-			Text = Color3.fromRGB(240, 240, 240),
-			Placeholder = Color3.fromRGB(150, 150, 150),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(46, 204, 113),
-			Warning = Color3.fromRGB(241, 196, 15),
-			Danger = Color3.fromRGB(231, 76, 60),
-			Transparent = 0.25,
-			GlassTransparency = 0.95,
-			StrokeTransparency = 0.5,
-		},
-		
-		Light = {
-			Name = "Light",
-			Primary = Color3.fromRGB(245, 245, 245),
-			Secondary = Color3.fromRGB(255, 255, 255),
-			Accent = Color3.fromRGB(41, 128, 185),
-			Text = Color3.fromRGB(30, 30, 30),
-			Placeholder = Color3.fromRGB(100, 100, 100),
-			White = Color3.fromRGB(0, 0, 0),
-			Success = Color3.fromRGB(39, 174, 96),
-			Warning = Color3.fromRGB(243, 156, 18),
-			Danger = Color3.fromRGB(192, 57, 43),
-			Transparent = 0.1,
-			GlassTransparency = 0.98,
-			StrokeTransparency = 0.3,
-		},
-		
-		Ocean = {
-			Name = "Ocean",
-			Primary = Color3.fromRGB(23, 32, 42),
-			Secondary = Color3.fromRGB(31, 97, 141),
-			Accent = Color3.fromRGB(52, 152, 219),
-			Text = Color3.fromRGB(236, 240, 241),
-			Placeholder = Color3.fromRGB(174, 214, 241),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(46, 204, 113),
-			Warning = Color3.fromRGB(241, 196, 15),
-			Danger = Color3.fromRGB(231, 76, 60),
-			Transparent = 0.2,
-			GlassTransparency = 0.96,
-			StrokeTransparency = 0.4,
-		},
-		
-		Forest = {
-			Name = "Forest",
-			Primary = Color3.fromRGB(27, 79, 27),
-			Secondary = Color3.fromRGB(39, 174, 96),
-			Accent = Color3.fromRGB(130, 204, 130),
-			Text = Color3.fromRGB(236, 240, 234),
-			Placeholder = Color3.fromRGB(200, 230, 201),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(46, 204, 113),
-			Warning = Color3.fromRGB(241, 196, 15),
-			Danger = Color3.fromRGB(231, 76, 60),
-			Transparent = 0.25,
-			GlassTransparency = 0.95,
-			StrokeTransparency = 0.5,
-		},
-		
-		Sunset = {
-			Name = "Sunset",
-			Primary = Color3.fromRGB(44, 62, 80),
-			Secondary = Color3.fromRGB(52, 73, 94),
-			Accent = Color3.fromRGB(155, 89, 182),
-			Text = Color3.fromRGB(253, 227, 167),
-			Placeholder = Color3.fromRGB(245, 203, 167),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(46, 204, 113),
-			Warning = Color3.fromRGB(241, 196, 15),
-			Danger = Color3.fromRGB(231, 76, 60),
-			Transparent = 0.25,
-			GlassTransparency = 0.94,
-			StrokeTransparency = 0.5,
-		},
-		
-		Cyberpunk = {
-			Name = "Cyberpunk",
-			Primary = Color3.fromRGB(10, 10, 30),
-			Secondary = Color3.fromRGB(30, 10, 50),
-			Accent = Color3.fromRGB(255, 0, 255),
-			Text = Color3.fromRGB(0, 255, 255),
-			Placeholder = Color3.fromRGB(150, 100, 255),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(0, 255, 0),
-			Warning = Color3.fromRGB(255, 255, 0),
-			Danger = Color3.fromRGB(255, 0, 0),
-			Transparent = 0.3,
-			GlassTransparency = 0.92,
-			StrokeTransparency = 0.6,
-		},
-		
-		Neon = {
-			Name = "Neon",
-			Primary = Color3.fromRGB(10, 10, 10),
-			Secondary = Color3.fromRGB(20, 20, 20),
-			Accent = Color3.fromRGB(0, 255, 150),
-			Text = Color3.fromRGB(255, 50, 100),
-			Placeholder = Color3.fromRGB(100, 255, 200),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(0, 255, 0),
-			Warning = Color3.fromRGB(255, 255, 0),
-			Danger = Color3.fromRGB(255, 0, 255),
-			Transparent = 0.35,
-			GlassTransparency = 0.9,
-			StrokeTransparency = 0.7,
-		},
-		
-		Gothic = {
-			Name = "Gothic",
-			Primary = Color3.fromRGB(15, 15, 25),
-			Secondary = Color3.fromRGB(25, 25, 40),
-			Accent = Color3.fromRGB(220, 20, 60),
-			Text = Color3.fromRGB(200, 200, 210),
-			Placeholder = Color3.fromRGB(120, 120, 140),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(138, 43, 226),
-			Warning = Color3.fromRGB(255, 140, 0),
-			Danger = Color3.fromRGB(220, 20, 60),
-			Transparent = 0.3,
-			GlassTransparency = 0.93,
-			StrokeTransparency = 0.6,
-		},
-		
-		Sky = {
-			Name = "Sky",
-			Primary = Color3.fromRGB(135, 206, 235),
-			Secondary = Color3.fromRGB(176, 224, 230),
-			Accent = Color3.fromRGB(255, 255, 255),
-			Text = Color3.fromRGB(30, 60, 90),
-			Placeholder = Color3.fromRGB(100, 130, 180),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(50, 205, 50),
-			Warning = Color3.fromRGB(255, 215, 0),
-			Danger = Color3.fromRGB(255, 99, 71),
-			Transparent = 0.15,
-			GlassTransparency = 0.97,
-			StrokeTransparency = 0.4,
-		},
-		
-		Lavender = {
-			Name = "Lavender",
-			Primary = Color3.fromRGB(90, 80, 120),
-			Secondary = Color3.fromRGB(120, 100, 150),
-			Accent = Color3.fromRGB(200, 162, 255),
-			Text = Color3.fromRGB(230, 230, 250),
-			Placeholder = Color3.fromRGB(180, 160, 210),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(147, 112, 219),
-			Warning = Color3.fromRGB(255, 160, 122),
-			Danger = Color3.fromRGB(255, 105, 180),
-			Transparent = 0.25,
-			GlassTransparency = 0.94,
-			StrokeTransparency = 0.5,
-		},
-		
-		Lemon = {
-			Name = "Lemon",
-			Primary = Color3.fromRGB(255, 250, 205),
-			Secondary = Color3.fromRGB(255, 255, 224),
-			Accent = Color3.fromRGB(255, 215, 0),
-			Text = Color3.fromRGB(50, 50, 0),
-			Placeholder = Color3.fromRGB(150, 150, 50),
-			White = Color3.fromRGB(0, 0, 0),
-			Success = Color3.fromRGB(154, 205, 50),
-			Warning = Color3.fromRGB(255, 165, 0),
-			Danger = Color3.fromRGB(255, 69, 0),
-			Transparent = 0.1,
-			GlassTransparency = 0.98,
-			StrokeTransparency = 0.3,
-		},
-		
-		Cherry = {
-			Name = "Cherry",
-			Primary = Color3.fromRGB(60, 20, 20),
-			Secondary = Color3.fromRGB(80, 30, 30),
-			Accent = Color3.fromRGB(255, 20, 147),
-			Text = Color3.fromRGB(255, 220, 220),
-			Placeholder = Color3.fromRGB(200, 150, 150),
-			White = Color3.fromRGB(255, 255, 255),
-			Success = Color3.fromRGB(0, 255, 127),
-			Warning = Color3.fromRGB(255, 140, 0),
-			Danger = Color3.fromRGB(220, 20, 60),
-			Transparent = 0.25,
-			GlassTransparency = 0.92,
-			StrokeTransparency = 0.5,
-		},
-	},
-	
-	GetColor = function(self, colorName)
-		local theme = self.Themes[self.currentTheme]
-		return theme and theme[colorName] or self.Themes.Dark[colorName]
+	Save = function(self)
+		local json = game:GetService("HttpService"):JSONEncode(self.data)
+		writefile(self.saveFile, json)
 	end,
 	
-	SaveTheme = function(self)
-		local success, encoded = pcall(function()
-			return services.HttpService:JSONEncode({
-				currentTheme = self.currentTheme,
-				customThemes = self.customThemes
-			})
+	Load = function(self)
+		local success, result = pcall(function()
+			return readfile(self.saveFile)
 		end)
 		
-		if success then
-			writefile(self.config.saveFile, encoded)
-			return true
+		if success and result then
+			local success2, data = pcall(function()
+				return game:GetService("HttpService"):JSONDecode(result)
+			end)
+			
+			if success2 and data then
+				self.data = data
+				return true
+			end
 		end
 		return false
-	end,
-	
-	LoadTheme = function(self)
-		local success, data = pcall(function()
-			if isfile(self.config.saveFile) then
-				return services.HttpService:JSONDecode(readfile(self.config.saveFile))
-			end
-			return nil
-		end)
-		
-		if success and data then
-			if data.customThemes then
-				for name, colors in pairs(data.customThemes) do
-					self.Themes[name] = colors
-				end
-				self.customThemes = data.customThemes
-			end
-			
-			if data.currentTheme and self.Themes[data.currentTheme] then
-				self.currentTheme = data.currentTheme
-			end
-			
-			return true
-		end
-		return false
-	end,
-	
-	SetTheme = function(self, themeName, instant)
-		if not self.Themes[themeName] then return false end
-		
-		self.currentTheme = themeName
-		local theme = self.Themes[themeName]
-		
-		local dogent = services.CoreGui:FindFirstChild("REN")
-		if not dogent then return false end
-		
-		local Main = dogent:FindFirstChild("Main")
-		if not Main then return false end
-		
-		local function applyThemeTo(obj)
-			if not obj or not theme then return end
-			
-			if obj:IsA("GuiObject") then
-				if obj.Name == "Main" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Primary,
-						BackgroundTransparency = theme.Transparent
-					})
-				elseif obj.Name == "TitleBar" or obj.Name == "Section" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Secondary,
-						BackgroundTransparency = theme.Transparent
-					})
-				elseif obj.Name == "Btn" or obj.Name == "ToggleBtn" or obj.Name == "KeybindBtn" or obj.Name == "TextboxBack" or obj.Name == "SliderBack" or obj.Name == "DropdownTop" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Secondary,
-						BackgroundTransparency = 0.3
-					})
-				elseif obj.Name == "BoxBG" or obj.Name == "KeybindValue" or obj.Name == "SliderValBG" or obj.Name == "ThemeDropdown" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Primary,
-						BackgroundTransparency = 0.5
-					})
-				elseif obj.Name == "ToggleDisable" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Primary,
-						BackgroundTransparency = 0.5
-					})
-				elseif obj.Name == "SliderBar" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Primary,
-						BackgroundTransparency = 0.5
-					})
-				elseif obj.Name == "SliderPart" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Accent
-					})
-				elseif obj.Name == "ThemeDropdownTop" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						BackgroundColor3 = theme.Secondary,
-						BackgroundTransparency = 0.3
-					})
-				end
-				
-				if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
-					if obj.Text ~= "+" and obj.Text ~= "-" and obj.Text ~= "×" then
-						Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-							TextColor3 = theme.Text
-						})
-					end
-					if obj:IsA("TextBox") and obj.PlaceholderText ~= "" then
-						Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-							PlaceholderColor3 = theme.Placeholder
-						})
-					end
-				end
-				
-				if obj:IsA("ImageLabel") and obj.Name ~= "GlassEffect" and obj.Name ~= "DropShadow" then
-					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
-						ImageColor3 = theme.Text
-					})
-				end
-				
-				if obj:FindFirstChild("GlassEffect") then
-					local glass = obj.GlassEffect
-					Tween(glass, instant and 0 or 0.5, "Sine", "Out", { 
-						ImageTransparency = theme.GlassTransparency
-					})
-				end
-				
-				if obj:FindFirstChild("UIStroke") then
-					local stroke = obj.UIStroke
-					Tween(stroke, instant and 0 or 0.5, "Sine", "Out", { 
-						Color = theme.Secondary,
-						Transparency = theme.StrokeTransparency
-					})
-				end
-			end
-			
-			for _, child in ipairs(obj:GetChildren()) do
-				applyThemeTo(child)
-			end
-		end
-		
-		applyThemeTo(Main)
-		
-		local TitleGradient = Main:FindFirstChild("TitleBar"):FindFirstChild("ScriptTitle"):FindFirstChild("UIGradient")
-		if TitleGradient then
-			local h, s, v = theme.Accent:ToHSV()
-			Tween(TitleGradient, instant and 0 or 0.5, "Sine", "Out", { 
-				Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0.00, theme.Accent),
-					ColorSequenceKeypoint.new(0.50, Color3.fromHSV(h, math.min(s + 0.2, 1), v * 0.8)),
-					ColorSequenceKeypoint.new(1.00, Color3.fromHSV(h, math.min(s + 0.3, 1), v * 0.6)),
-				})
-			})
-		end
-		
-		return true
-	end,
-	
-	RegisterCustomTheme = function(self, name, colors)
-		if self.Themes[name] then return false end
-		
-		local requiredColors = {
-			"Primary", "Secondary", "Accent", "Text", "Placeholder", 
-			"White", "Success", "Warning", "Danger", "Transparent",
-			"GlassTransparency", "StrokeTransparency"
-		}
-		
-		for _, colorName in ipairs(requiredColors) do
-			if not colors[colorName] then
-				warn("自定义主题缺少必要颜色: " .. colorName)
-				return false
-			end
-		end
-		
-		self.Themes[name] = colors
-		self.customThemes[name] = colors
-		return true
-	end,
+	end
 }
-library.themeManager = ThemeManager
 
-local function CreateGlassEffect(instance, transparency, themeName)
-	local theme = ThemeManager.Themes[themeName or ThemeManager.currentTheme]
-	instance.BackgroundTransparency = transparency or theme.Transparent
+-- ==================== 颜色定义 ====================
+local Colors = {
+	Primary = Color3.fromRGB(15, 15, 15),
+	Secondary = Color3.fromRGB(30, 30, 30),
+	Accent = Color3.fromRGB(52, 152, 219),
+	Text = Color3.fromRGB(240, 240, 240),
+	Placeholder = Color3.fromRGB(150, 150, 150),
+	White = Color3.fromRGB(255, 255, 255),
+	Transparent = 0.25,
+}
+
+-- ==================== 反转颜色 ====================
+local InvertedColors = {
+	Primary = Color3.fromRGB(245, 245, 245),
+	Secondary = Color3.fromRGB(255, 255, 255),
+	Accent = Color3.fromRGB(41, 128, 185),
+	Text = Color3.fromRGB(0, 0, 0),
+	Placeholder = Color3.fromRGB(100, 100, 100),
+	White = Color3.fromRGB(0, 0, 0),
+	Transparent = 0.1,
+}
+
+local currentColors = Colors  -- 当前使用的颜色表
+
+local function CreateGlassEffect(instance, transparency)
+	instance.BackgroundTransparency = transparency or currentColors.Transparent
 	
 	if not instance:FindFirstChild("GlassEffect") then
 		local blur = Instance.new("ImageLabel")
@@ -410,7 +79,7 @@ local function CreateGlassEffect(instance, transparency, themeName)
 		blur.BackgroundTransparency = 1
 		blur.Size = UDim2.new(1, 0, 1, 0)
 		blur.Image = "rbxassetid://5554237735"
-		blur.ImageTransparency = theme.GlassTransparency
+		blur.ImageTransparency = 0.95
 		blur.Parent = instance
 	end
 end
@@ -430,13 +99,13 @@ function Ripple(obj)
 		local Ripple = Instance.new("ImageLabel")
 		Ripple.Name = "Ripple"
 		Ripple.Parent = obj
-		Ripple.BackgroundColor3 = ThemeManager:GetColor("White")
+		Ripple.BackgroundColor3 = currentColors.White
 		Ripple.BackgroundTransparency = 1.000
 		Ripple.ZIndex = 8
 		Ripple.Image = "rbxassetid://2708891598"
 		Ripple.ImageTransparency = 0.800
 		Ripple.ScaleType = Enum.ScaleType.Fit
-		Ripple.ImageColor3 = ThemeManager:GetColor("White")
+		Ripple.ImageColor3 = currentColors.White
 		Ripple.Position = UDim2.new(
 			(mouse.X - Ripple.AbsolutePosition.X) / obj.AbsoluteSize.X,
 			0,
@@ -487,8 +156,99 @@ function drag(frame, hold)
 	end)
 end
 
--- ==================== 主UI创建函数 ====================
+-- ==================== 应用颜色到所有UI ====================
+local function ApplyColorsToAll(isInverted)
+	local dogent = services.CoreGui:FindFirstChild("REN")
+	if not dogent then return end
+	
+	local Main = dogent:FindFirstChild("Main")
+	if not Main then return end
+	
+	-- 根据状态切换颜色表
+	currentColors = isInverted and InvertedColors or Colors
+	
+	local function applyColors(obj)
+		if not obj then return end
+		
+		if obj:IsA("GuiObject") then
+			if obj.Name == "Main" then
+				obj.BackgroundColor3 = currentColors.Primary
+				obj.BackgroundTransparency = currentColors.Transparent
+			elseif obj.Name == "TitleBar" or obj.Name == "Section" then
+				obj.BackgroundColor3 = currentColors.Secondary
+				obj.BackgroundTransparency = currentColors.Transparent
+			elseif obj.Name == "Btn" or obj.Name == "ToggleBtn" or obj.Name == "KeybindBtn" or obj.Name == "TextboxBack" or obj.Name == "SliderBack" or obj.Name == "DropdownTop" then
+				obj.BackgroundColor3 = currentColors.Secondary
+				obj.BackgroundTransparency = 0.3
+			elseif obj.Name == "BoxBG" or obj.Name == "KeybindValue" or obj.Name == "SliderValBG" then
+				obj.BackgroundColor3 = currentColors.Primary
+				obj.BackgroundTransparency = 0.5
+			elseif obj.Name == "ToggleDisable" then
+				obj.BackgroundColor3 = currentColors.Primary
+				obj.BackgroundTransparency = 0.5
+			elseif obj.Name == "SliderBar" then
+				obj.BackgroundColor3 = currentColors.Primary
+				obj.BackgroundTransparency = 0.5
+			elseif obj.Name == "SliderPart" then
+				obj.BackgroundColor3 = currentColors.Accent
+			end
+			
+			if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
+				if obj.Text ~= "+" and obj.Text ~= "-" and obj.Text ~= "×" then
+					obj.TextColor3 = currentColors.Text
+				end
+				if obj:IsA("TextBox") and obj.PlaceholderText ~= "" then
+					obj.PlaceholderColor3 = currentColors.Placeholder
+				end
+			end
+			
+			if obj:IsA("ImageLabel") and obj.Name ~= "GlassEffect" and obj.Name ~= "DropShadow" then
+				obj.ImageColor3 = currentColors.Text
+			end
+		end
+		
+		for _, child in ipairs(obj:GetChildren()) do
+			applyColors(child)
+		end
+	end
+	
+	applyColors(Main)
+	
+	-- 更新标题渐变
+	local TitleGradient = Main:FindFirstChild("TitleBar"):FindFirstChild("ScriptTitle"):FindFirstChild("UIGradient")
+	if TitleGradient then
+		local accentColor = currentColors.Accent
+		local h, s, v = accentColor:ToHSV()
+		TitleGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0.00, accentColor),
+			ColorSequenceKeypoint.new(0.50, Color3.fromHSV(h, math.min(s + 0.2, 1), v * 0.8)),
+			ColorSequenceKeypoint.new(1.00, Color3.fromHSV(h, math.min(s + 0.3, 1), v * 0.6)),
+		})
+	end
+end
+
+-- ==================== 自动UI适配 ====================
+local function ApplyAutoUI()
+	local viewportSize = services.Workspace.CurrentCamera.ViewportSize
+	local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080)
+	
+	local dogent = services.CoreGui:FindFirstChild("REN")
+	if not dogent then return end
+	
+	local Main = dogent:FindFirstChild("Main")
+	if not Main then return end
+	
+	local targetWidth = math.floor(650 * scale)
+	local targetHeight = math.floor(400 * scale)
+	
+	Main.Size = UDim2.new(0, targetWidth, 0, targetHeight)
+	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+end
+
 function library.new(library, name)
+	-- 加载配置
+	Config:Load()
+	
 	for _, v in next, services.CoreGui:GetChildren() do
 		if v.Name == "REN" then
 			v:Destroy()
@@ -507,23 +267,23 @@ function library.new(library, name)
 	Main.Name = "Main"
 	Main.Parent = dogent
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
-	Main.BackgroundColor3 = ThemeManager:GetColor("Primary")
+	Main.BackgroundColor3 = currentColors.Primary
 	Main.Size = UDim2.new(0, 650, 0, 400)
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 	Main.ZIndex = 1
 	Main.Active = true
 	Main.Draggable = true
 	
-	CreateGlassEffect(Main, nil, ThemeManager.currentTheme)
+	CreateGlassEffect(Main)
 	
 	local MainC = Instance.new("UICorner")
 	MainC.CornerRadius = UDim.new(0, 8)
 	MainC.Parent = Main
 	
 	local MainStroke = Instance.new("UIStroke")
-	MainStroke.Color = ThemeManager:GetColor("Secondary")
+	MainStroke.Color = currentColors.Secondary
 	MainStroke.Thickness = 1
-	MainStroke.Transparency = ThemeManager:GetColor("StrokeTransparency")
+	MainStroke.Transparency = 0.5
 	MainStroke.Parent = Main
 	
 	local DropShadowHolder = Instance.new("Frame")
@@ -542,73 +302,59 @@ function library.new(library, name)
 	DropShadow.Size = UDim2.new(1, 47, 1, 47)
 	DropShadow.ZIndex = 0
 	DropShadow.Image = "rbxassetid://6015897843"
-	DropShadow.ImageColor3 = ThemeManager:GetColor("Primary")
+	DropShadow.ImageColor3 = currentColors.Primary
 	DropShadow.ImageTransparency = 0.7
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- 主题选择下拉框（新增）
-	local ThemeDropdown = Instance.new("Frame")
-	ThemeDropdown.Name = "ThemeDropdown"
-	ThemeDropdown.Parent = Main
-	ThemeDropdown.BackgroundColor3 = ThemeManager:GetColor("Primary")
-	ThemeDropdown.BackgroundTransparency = ThemeManager:GetColor("Transparent")
-	ThemeDropdown.Position = UDim2.new(1, -170, 0, 10)
-	ThemeDropdown.Size = UDim2.new(0, 100, 0, 25)
-	ThemeDropdown.ZIndex = 10
+	-- ==================== 控制按钮 ====================
+	-- 颜色反转按钮（最左边）
+	local ColorInvertBtn = Instance.new("TextButton")
+	ColorInvertBtn.Name = "ColorInvertBtn"
+	ColorInvertBtn.Parent = TitleBar
+	ColorInvertBtn.BackgroundColor3 = currentColors.Secondary
+	ColorInvertBtn.BackgroundTransparency = currentColors.Transparent
+	ColorInvertBtn.Position = UDim2.new(1, -95, 0, 10)
+	ColorInvertBtn.Size = UDim2.new(0, 25, 0, 25)
+	ColorInvertBtn.Font = Enum.Font.GothamBold
+	ColorInvertBtn.Text = "I"
+	ColorInvertBtn.TextColor3 = currentColors.Text
+	ColorInvertBtn.TextSize = 14
+	ColorInvertBtn.ZIndex = 10
 	
-	local ThemeDropdownC = Instance.new("UICorner")
-	ThemeDropdownC.CornerRadius = UDim.new(0, 6)
-	ThemeDropdownC.Parent = ThemeDropdown
+	local ColorInvertBtnC = Instance.new("UICorner")
+	ColorInvertBtnC.CornerRadius = UDim.new(0, 6)
+	ColorInvertBtnC.Parent = ColorInvertBtn
 	
-	CreateGlassEffect(ThemeDropdown, nil, ThemeManager.currentTheme)
+	-- 自动UI按钮
+	local AutoUIBtn = Instance.new("TextButton")
+	AutoUIBtn.Name = "AutoUIBtn"
+	AutoUIBtn.Parent = TitleBar
+	AutoUIBtn.BackgroundColor3 = currentColors.Secondary
+	AutoUIBtn.BackgroundTransparency = currentColors.Transparent
+	AutoUIBtn.Position = UDim2.new(1, -65, 0, 10)
+	AutoUIBtn.Size = UDim2.new(0, 25, 0, 25)
+	AutoUIBtn.Font = Enum.Font.GothamBold
+	AutoUIBtn.Text = "A"
+	AutoUIBtn.TextColor3 = currentColors.Text
+	AutoUIBtn.TextSize = 14
+	AutoUIBtn.ZIndex = 10
 	
-	local ThemeDropdownTop = Instance.new("TextButton")
-	ThemeDropdownTop.Name = "ThemeDropdownTop"
-	ThemeDropdownTop.Parent = ThemeDropdown
-	ThemeDropdownTop.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-	ThemeDropdownTop.BackgroundTransparency = 0.3
-	ThemeDropdownTop.Size = UDim2.new(1, 0, 0, 25)
-	ThemeDropdownTop.AutoButtonColor = false
-	ThemeDropdownTop.Font = Enum.Font.GothamSemibold
-	ThemeDropdownTop.Text = "Dark"
-	ThemeDropdownTop.TextColor3 = ThemeManager:GetColor("Text")
-	ThemeDropdownTop.TextSize = 12
-	ThemeDropdownTop.ZIndex = 11
+	local AutoUIBtnC = Instance.new("UICorner")
+	AutoUIBtnC.CornerRadius = UDim.new(0, 6)
+	AutoUIBtnC.Parent = AutoUIBtn
 	
-	local ThemeDropdownTopC = Instance.new("UICorner")
-	ThemeDropdownTopC.CornerRadius = UDim.new(0, 6)
-	ThemeDropdownTopC.Parent = ThemeDropdownTop
-	
-	local ThemeDropdownOpen = Instance.new("TextButton")
-	ThemeDropdownOpen.Name = "ThemeDropdownOpen"
-	ThemeDropdownOpen.Parent = ThemeDropdownTop
-	ThemeDropdownOpen.AnchorPoint = Vector2.new(0, 0.5)
-	ThemeDropdownOpen.BackgroundTransparency = 1
-	ThemeDropdownOpen.Position = UDim2.new(1, -20, 0.5, 0)
-	ThemeDropdownOpen.Size = UDim2.new(0, 20, 0, 20)
-	ThemeDropdownOpen.Font = Enum.Font.GothamBold
-	ThemeDropdownOpen.Text = "▼"
-	ThemeDropdownOpen.TextColor3 = ThemeManager:GetColor("Text")
-	ThemeDropdownOpen.TextSize = 14
-	ThemeDropdownOpen.ZIndex = 11
-	
-	local ThemeDropdownModuleL = Instance.new("UIListLayout")
-	ThemeDropdownModuleL.Name = "ThemeDropdownModuleL"
-	ThemeDropdownModuleL.Parent = ThemeDropdown
-	ThemeDropdownModuleL.SortOrder = Enum.SortOrder.LayoutOrder
-	ThemeDropdownModuleL.Padding = UDim.new(0, 2)
-	
+	-- 关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
-	CloseBtn.Parent = Main
-	CloseBtn.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-	CloseBtn.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	CloseBtn.Parent = TitleBar
+	CloseBtn.BackgroundColor3 = currentColors.Secondary
+	CloseBtn.BackgroundTransparency = currentColors.Transparent
 	CloseBtn.Position = UDim2.new(1, -35, 0, 10)
 	CloseBtn.Size = UDim2.new(0, 25, 0, 25)
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.Text = "×"
-	CloseBtn.TextColor3 = ThemeManager:GetColor("Text")
+	CloseBtn.TextColor3 = currentColors.Text
 	CloseBtn.TextSize = 20
 	CloseBtn.ZIndex = 10
 	
@@ -620,11 +366,68 @@ function library.new(library, name)
 		dogent:Destroy()
 	end)
 	
+	-- 按钮功能实现
+	local function UpdateButtonState(btn, isActive)
+		if isActive then
+			btn.BackgroundColor3 = currentColors.Accent
+			btn.BackgroundTransparency = 0.5
+		else
+			btn.BackgroundColor3 = currentColors.Secondary
+			btn.BackgroundTransparency = currentColors.Transparent
+		end
+	end
+	
+	-- 颜色反转功能
+	ColorInvertBtn.MouseButton1Click:Connect(function()
+		spawn(function()
+			Ripple(ColorInvertBtn)
+		end)
+		
+		Config.data.colorInvertEnabled = not Config.data.colorInvertEnabled
+		ApplyColorsToAll(Config.data.colorInvertEnabled)
+		UpdateButtonState(ColorInvertBtn, Config.data.colorInvertEnabled)
+		Config:Save()
+	end)
+	
+	-- 自动UI功能
+	AutoUIBtn.MouseButton1Click:Connect(function()
+		spawn(function()
+			Ripple(AutoUIBtn)
+		end)
+		
+		Config.data.autoUIEnabled = not Config.data.autoUIEnabled
+		
+		if Config.data.autoUIEnabled then
+			ApplyAutoUI()
+			services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ApplyAutoUI)
+		else
+			Main.Size = UDim2.new(0, 650, 0, 400)
+			services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() end)
+		end
+		
+		UpdateButtonState(AutoUIBtn, Config.data.autoUIEnabled)
+		Config:Save()
+	end)
+	
+	-- 应用保存的配置
+	UpdateButtonState(ColorInvertBtn, Config.data.colorInvertEnabled)
+	UpdateButtonState(AutoUIBtn, Config.data.autoUIEnabled)
+	
+	if Config.data.colorInvertEnabled then
+		ApplyColorsToAll(true)
+	end
+	
+	if Config.data.autoUIEnabled then
+		ApplyAutoUI()
+		services.Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ApplyAutoUI)
+	end
+	
+	-- ==================== 其余UI代码 ====================
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Name = "TitleBar"
 	TitleBar.Parent = Main
-	TitleBar.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-	TitleBar.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	TitleBar.BackgroundColor3 = currentColors.Secondary
+	TitleBar.BackgroundTransparency = currentColors.Transparent
 	TitleBar.Size = UDim2.new(1, 0, 0, 45)
 	
 	local TitleBarC = Instance.new("UICorner")
@@ -636,15 +439,15 @@ function library.new(library, name)
 	Title.Parent = TitleBar
 	Title.BackgroundTransparency = 1
 	Title.Position = UDim2.new(0, 15, 0, 0)
-	Title.Size = UDim2.new(1, -200, 1, 0)
+	Title.Size = UDim2.new(1, -120, 1, 0)  -- 为按钮留出空间
 	Title.Font = Enum.Font.GothamBlack
 	Title.Text = name
-	Title.TextColor3 = ThemeManager:GetColor("Text")
+	Title.TextColor3 = currentColors.Text
 	Title.TextSize = 18
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	
 	local TitleGradient = Instance.new("UIGradient")
-	local accentColor = ThemeManager:GetColor("Accent")
+	local accentColor = currentColors.Accent
 	local h, s, v = accentColor:ToHSV()
 	TitleGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0.00, accentColor),
@@ -664,8 +467,8 @@ function library.new(library, name)
 	local SearchBar = Instance.new("Frame")
 	SearchBar.Name = "SearchBar"
 	SearchBar.Parent = Main
-	SearchBar.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-	SearchBar.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	SearchBar.BackgroundColor3 = currentColors.Secondary
+	SearchBar.BackgroundTransparency = currentColors.Transparent
 	SearchBar.Position = UDim2.new(0, 15, 0, 55)
 	SearchBar.Size = UDim2.new(1, -30, 0, 35)
 	
@@ -673,7 +476,7 @@ function library.new(library, name)
 	SearchBarC.CornerRadius = UDim.new(0, 6)
 	SearchBarC.Parent = SearchBar
 	
-	CreateGlassEffect(SearchBar, nil, ThemeManager.currentTheme)
+	CreateGlassEffect(SearchBar)
 	
 	local SearchIcon = Instance.new("ImageLabel")
 	SearchIcon.Name = "SearchIcon"
@@ -684,7 +487,7 @@ function library.new(library, name)
 	SearchIcon.Image = "rbxassetid://3926305904"
 	SearchIcon.ImageRectOffset = Vector2.new(964, 324)
 	SearchIcon.ImageRectSize = Vector2.new(36, 36)
-	SearchIcon.ImageColor3 = ThemeManager:GetColor("Placeholder")
+	SearchIcon.ImageColor3 = currentColors.Placeholder
 	
 	local SearchBox = Instance.new("TextBox")
 	SearchBox.Name = "SearchBox"
@@ -695,8 +498,8 @@ function library.new(library, name)
 	SearchBox.Font = Enum.Font.Gotham
 	SearchBox.PlaceholderText = "搜索标签页或功能..."
 	SearchBox.Text = ""
-	SearchBox.TextColor3 = ThemeManager:GetColor("Text")
-	SearchBox.PlaceholderColor3 = ThemeManager:GetColor("Placeholder")
+	SearchBox.TextColor3 = currentColors.Text
+	SearchBox.PlaceholderColor3 = currentColors.Placeholder
 	SearchBox.TextSize = 14
 	SearchBox.ClearTextOnFocus = false
 	
@@ -710,15 +513,15 @@ function library.new(library, name)
 	local SideBar = Instance.new("Frame")
 	SideBar.Name = "SideBar"
 	SideBar.Parent = Content
-	SideBar.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-	SideBar.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	SideBar.BackgroundColor3 = currentColors.Secondary
+	SideBar.BackgroundTransparency = currentColors.Transparent
 	SideBar.Size = UDim2.new(0, 140, 1, 0)
 	
 	local SideBarC = Instance.new("UICorner")
 	SideBarC.CornerRadius = UDim.new(0, 8)
 	SideBarC.Parent = SideBar
 	
-	CreateGlassEffect(SideBar, nil, ThemeManager.currentTheme)
+	CreateGlassEffect(SideBar)
 	
 	local TabButtons = Instance.new("ScrollingFrame")
 	TabButtons.Name = "TabBts"
@@ -730,7 +533,7 @@ function library.new(library, name)
 	TabButtons.Size = UDim2.new(1, -10, 1, -10)
 	TabButtons.CanvasSize = UDim2.new(0, 0, 0, 0)
 	TabButtons.ScrollBarThickness = 2
-	TabButtons.ScrollBarImageColor3 = ThemeManager:GetColor("Secondary")
+	TabButtons.ScrollBarImageColor3 = currentColors.Secondary
 	
 	local TabButtonsL = Instance.new("UIListLayout")
 	TabButtonsL.Name = "TabBtsL"
@@ -752,13 +555,13 @@ function library.new(library, name)
 	local Open = Instance.new("TextButton")
 	Open.Name = "Open"
 	Open.Parent = dogent
-	Open.BackgroundColor3 = ThemeManager:GetColor("Primary")
-	Open.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+	Open.BackgroundColor3 = currentColors.Primary
+	Open.BackgroundTransparency = currentColors.Transparent
 	Open.Position = UDim2.new(0.01, 0, 0.3, 0)
 	Open.Size = UDim2.new(0, 70, 0, 35)
 	Open.Font = Enum.Font.GothamBold
 	Open.Text = "打开"
-	Open.TextColor3 = ThemeManager:GetColor("Text")
+	Open.TextColor3 = currentColors.Text
 	Open.TextSize = 14
 	Open.Active = true
 	Open.Draggable = true
@@ -768,10 +571,10 @@ function library.new(library, name)
 	OpenC.CornerRadius = UDim.new(0, 6)
 	OpenC.Parent = Open
 	
-	CreateGlassEffect(Open, nil, ThemeManager.currentTheme)
+	CreateGlassEffect(Open)
 	
 	local OpenStroke = Instance.new("UIStroke")
-	OpenStroke.Color = ThemeManager:GetColor("Secondary")
+	OpenStroke.Color = currentColors.Secondary
 	OpenStroke.Thickness = 1
 	OpenStroke.Transparency = 0.5
 	OpenStroke.Parent = Open
@@ -814,60 +617,6 @@ function library.new(library, name)
 		end
 	end)
 	
-	-- 主题下拉框逻辑
-	local themeDropdownOpen = false
-	local themeDropdownFuncs = nil
-	
-	ThemeDropdownOpen.MouseButton1Click:Connect(function()
-		themeDropdownOpen = not themeDropdownOpen
-		ThemeDropdownOpen.Text = themeDropdownOpen and "▲" or "▼"
-		
-		if themeDropdownOpen then
-			Tween(ThemeDropdown, 0.2, "Sine", "Out", { 
-				Size = UDim2.new(0, 100, 0, 25 + #ThemeManager.Themes * 28) 
-			})
-		else
-			Tween(ThemeDropdown, 0.2, "Sine", "Out", { 
-				Size = UDim2.new(0, 100, 0, 25) 
-			})
-		end
-	end)
-	
-	-- 初始化主题选项
-	local function InitializeThemeDropdown()
-		for themeName, themeData in pairs(ThemeManager.Themes) do
-			local option = Instance.new("TextButton")
-			option.Name = "Option_" .. themeName
-			option.Parent = ThemeDropdown
-			option.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-			option.BackgroundTransparency = 0.3
-			option.Size = UDim2.new(1, 0, 0, 28)
-			option.AutoButtonColor = false
-			option.Font = Enum.Font.Gotham
-			option.Text = themeName
-			option.TextColor3 = ThemeManager:GetColor("Text")
-			option.TextSize = 12
-			option.ZIndex = 12
-			
-			local optionC = Instance.new("UICorner")
-			optionC.CornerRadius = UDim.new(0, 4)
-			optionC.Parent = option
-			
-			CreateGlassEffect(option, nil, ThemeManager.currentTheme)
-			
-			option.MouseButton1Click:Connect(function()
-				ThemeManager:SetTheme(themeName)
-				ThemeManager:SaveTheme()
-				ThemeDropdownTop.Text = themeName
-				themeDropdownOpen = false
-				ThemeDropdownOpen.Text = "▼"
-				Tween(ThemeDropdown, 0.2, "Sine", "Out", { Size = UDim2.new(0, 100, 0, 25) })
-			end)
-		end
-		
-		ThemeDropdownTop.Text = ThemeManager.currentTheme
-	end
-	
 	drag(Main, TitleBar)
 	
 	local window = {}
@@ -904,7 +653,7 @@ function library.new(library, name)
 		local tabButton = Instance.new("Frame")
 		tabButton.Name = "TabButton"
 		tabButton.Parent = TabButtons
-		tabButton.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+		tabButton.BackgroundColor3 = currentColors.Secondary
 		tabButton.BackgroundTransparency = 0.3
 		tabButton.Size = UDim2.new(1, 0, 0, 40)
 		
@@ -912,7 +661,7 @@ function library.new(library, name)
 		tabButtonC.CornerRadius = UDim.new(0, 6)
 		tabButtonC.Parent = tabButton
 		
-		CreateGlassEffect(tabButton, nil, ThemeManager.currentTheme)
+		CreateGlassEffect(tabButton)
 		
 		local tabIcon = Instance.new("ImageLabel")
 		tabIcon.Name = "TabIcon"
@@ -921,7 +670,7 @@ function library.new(library, name)
 		tabIcon.Position = UDim2.new(0, 10, 0.5, -12)
 		tabIcon.Size = UDim2.new(0, 24, 0, 24)
 		tabIcon.Image = ("rbxassetid://%s"):format(icon or 4370341699)
-		tabIcon.ImageColor3 = ThemeManager:GetColor("Text")
+		tabIcon.ImageColor3 = currentColors.Text
 		
 		local tabText = Instance.new("TextLabel")
 		tabText.Name = "TabText"
@@ -931,7 +680,7 @@ function library.new(library, name)
 		tabText.Size = UDim2.new(1, -50, 1, 0)
 		tabText.Font = Enum.Font.GothamSemibold
 		tabText.Text = name
-		tabText.TextColor3 = ThemeManager:GetColor("Text")
+		tabText.TextColor3 = currentColors.Text
 		tabText.TextSize = 14
 		tabText.TextXAlignment = Enum.TextXAlignment.Left
 		
@@ -993,22 +742,22 @@ function library.new(library, name)
 			local Section = Instance.new("Frame")
 			Section.Name = "Section"
 			Section.Parent = tabFrame
-			Section.BackgroundColor3 = ThemeManager:GetColor("Secondary")
-			Section.BackgroundTransparency = ThemeManager:GetColor("Transparent")
+			Section.BackgroundColor3 = currentColors.Secondary
+			Section.BackgroundTransparency = currentColors.Transparent
 			Section.BorderSizePixel = 0
 			Section.ClipsDescendants = true
 			Section.Size = UDim2.new(0.975, 0, 0, 42)
 			
-			CreateGlassEffect(Section, nil, ThemeManager.currentTheme)
+			CreateGlassEffect(Section)
 			
 			local SectionC = Instance.new("UICorner")
 			SectionC.CornerRadius = UDim.new(0, 8)
 			SectionC.Parent = Section
 			
 			local SectionStroke = Instance.new("UIStroke")
-			SectionStroke.Color = ThemeManager:GetColor("Primary")
+			SectionStroke.Color = currentColors.Primary
 			SectionStroke.Thickness = 1
-			SectionStroke.Transparency = ThemeManager:GetColor("StrokeTransparency")
+			SectionStroke.Transparency = 0.5
 			SectionStroke.Parent = Section
 			
 			local SectionText = Instance.new("TextLabel")
@@ -1019,7 +768,7 @@ function library.new(library, name)
 			SectionText.Size = UDim2.new(1, -45, 0, 42)
 			SectionText.Font = Enum.Font.GothamBold
 			SectionText.Text = name
-			SectionText.TextColor3 = ThemeManager:GetColor("Text")
+			SectionText.TextColor3 = currentColors.Text
 			SectionText.TextSize = 16
 			SectionText.TextXAlignment = Enum.TextXAlignment.Left
 			
@@ -1031,7 +780,7 @@ function library.new(library, name)
 			SectionOpen.Position = UDim2.new(0, -30, 0, 8)
 			SectionOpen.Size = UDim2.new(0, 26, 0, 26)
 			SectionOpen.Image = "http://www.roblox.com/asset/?id=6031302934"
-			SectionOpen.ImageColor3 = ThemeManager:GetColor("Text")
+			SectionOpen.ImageColor3 = currentColors.Text
 			
 			local SectionOpened = Instance.new("ImageLabel")
 			SectionOpened.Name = "SectionOpened"
@@ -1041,7 +790,7 @@ function library.new(library, name)
 			SectionOpened.Size = UDim2.new(0, 26, 0, 26)
 			SectionOpened.Image = "http://www.roblox.com/asset/?id=6031302932"
 			SectionOpened.ImageTransparency = 1.000
-			SectionOpened.ImageColor3 = ThemeManager:GetColor("Text")
+			SectionOpened.ImageColor3 = currentColors.Text
 			
 			local SectionToggle = Instance.new("ImageButton")
 			SectionToggle.Name = "SectionToggle"
@@ -1098,17 +847,17 @@ function library.new(library, name)
 				local Btn = Instance.new("TextButton")
 				Btn.Name = "Btn"
 				Btn.Parent = BtnModule
-				Btn.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				Btn.BackgroundColor3 = currentColors.Secondary
 				Btn.BackgroundTransparency = 0.3
 				Btn.Size = UDim2.new(1, 0, 1, 0)
 				Btn.AutoButtonColor = false
 				Btn.Font = Enum.Font.GothamSemibold
 				Btn.Text = "   " .. text
-				Btn.TextColor3 = ThemeManager:GetColor("Text")
+				Btn.TextColor3 = currentColors.Text
 				Btn.TextSize = 15
 				Btn.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(Btn, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(Btn)
 				
 				local BtnC = Instance.new("UICorner")
 				BtnC.CornerRadius = UDim.new(0, 6)
@@ -1132,16 +881,16 @@ function library.new(library, name)
 				
 				local TextLabel = Instance.new("TextLabel")
 				TextLabel.Parent = LabelModule
-				TextLabel.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				TextLabel.BackgroundColor3 = currentColors.Secondary
 				TextLabel.BackgroundTransparency = 0.3
 				TextLabel.Size = UDim2.new(1, 0, 1, 0)
 				TextLabel.Font = Enum.Font.GothamSemibold
 				TextLabel.Text = text
-				TextLabel.TextColor3 = ThemeManager:GetColor("Text")
+				TextLabel.TextColor3 = currentColors.Text
 				TextLabel.TextSize = 14
 				TextLabel.TextWrapped = true
 				
-				CreateGlassEffect(TextLabel, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(TextLabel)
 				
 				local LabelC = Instance.new("UICorner")
 				LabelC.CornerRadius = UDim.new(0, 6)
@@ -1167,17 +916,17 @@ function library.new(library, name)
 				local ToggleBtn = Instance.new("TextButton")
 				ToggleBtn.Name = "ToggleBtn"
 				ToggleBtn.Parent = ToggleModule
-				ToggleBtn.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				ToggleBtn.BackgroundColor3 = currentColors.Secondary
 				ToggleBtn.BackgroundTransparency = 0.3
 				ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
 				ToggleBtn.AutoButtonColor = false
 				ToggleBtn.Font = Enum.Font.GothamSemibold
 				ToggleBtn.Text = "   " .. text
-				ToggleBtn.TextColor3 = ThemeManager:GetColor("Text")
+				ToggleBtn.TextColor3 = currentColors.Text
 				ToggleBtn.TextSize = 15
 				ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(ToggleBtn, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(ToggleBtn)
 				
 				local ToggleBtnC = Instance.new("UICorner")
 				ToggleBtnC.CornerRadius = UDim.new(0, 6)
@@ -1186,7 +935,7 @@ function library.new(library, name)
 				local ToggleDisable = Instance.new("Frame")
 				ToggleDisable.Name = "ToggleDisable"
 				ToggleDisable.Parent = ToggleBtn
-				ToggleDisable.BackgroundColor3 = ThemeManager:GetColor("Primary")
+				ToggleDisable.BackgroundColor3 = currentColors.Primary
 				ToggleDisable.BackgroundTransparency = 0.5
 				ToggleDisable.BorderSizePixel = 0
 				ToggleDisable.Position = UDim2.new(1, -45, 0.5, -11)
@@ -1195,7 +944,7 @@ function library.new(library, name)
 				local ToggleSwitch = Instance.new("Frame")
 				ToggleSwitch.Name = "ToggleSwitch"
 				ToggleSwitch.Parent = ToggleDisable
-				ToggleSwitch.BackgroundColor3 = ThemeManager:GetColor("White")
+				ToggleSwitch.BackgroundColor3 = currentColors.White
 				ToggleSwitch.Size = UDim2.new(0, 18, 0, 22)
 				
 				local ToggleDisableC = Instance.new("UICorner")
@@ -1216,11 +965,12 @@ function library.new(library, name)
 						end
 						Tween(ToggleSwitch, 0.15, "Sine", "Out", {
 							Position = UDim2.new(0, (state and 18 or 0), 0, 0),
-							BackgroundColor3 = state and ThemeManager:GetColor("Accent") or ThemeManager:GetColor("White")
+							BackgroundColor3 = state and currentColors.Accent or currentColors.White
 						})
 						library.flags[flag] = state
 						callback(state)
 					end,
+					Module = ToggleModule,
 				}
 				
 				if enabled then
@@ -1275,17 +1025,17 @@ function library.new(library, name)
 				local KeybindBtn = Instance.new("TextButton")
 				KeybindBtn.Name = "KeybindBtn"
 				KeybindBtn.Parent = KeybindModule
-				KeybindBtn.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				KeybindBtn.BackgroundColor3 = currentColors.Secondary
 				KeybindBtn.BackgroundTransparency = 0.3
 				KeybindBtn.Size = UDim2.new(1, 0, 1, 0)
 				KeybindBtn.AutoButtonColor = false
 				KeybindBtn.Font = Enum.Font.GothamSemibold
 				KeybindBtn.Text = "   " .. text
-				KeybindBtn.TextColor3 = ThemeManager:GetColor("Text")
+				KeybindBtn.TextColor3 = currentColors.Text
 				KeybindBtn.TextSize = 15
 				KeybindBtn.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(KeybindBtn, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(KeybindBtn)
 				
 				local KeybindBtnC = Instance.new("UICorner")
 				KeybindBtnC.CornerRadius = UDim.new(0, 6)
@@ -1294,19 +1044,26 @@ function library.new(library, name)
 				local KeybindValue = Instance.new("TextButton")
 				KeybindValue.Name = "KeybindValue"
 				KeybindValue.Parent = KeybindBtn
-				KeybindValue.BackgroundColor3 = ThemeManager:GetColor("Primary")
+				KeybindValue.BackgroundColor3 = currentColors.Primary
 				KeybindValue.BackgroundTransparency = 0.5
 				KeybindValue.Position = UDim2.new(1, -60, 0.5, -14)
 				KeybindValue.Size = UDim2.new(0, 55, 0, 28)
 				KeybindValue.AutoButtonColor = false
 				KeybindValue.Font = Enum.Font.GothamSemibold
 				KeybindValue.Text = keyTxt
-				KeybindValue.TextColor3 = ThemeManager:GetColor("Text")
+				KeybindValue.TextColor3 = currentColors.Text
 				KeybindValue.TextSize = 14
 				
 				local KeybindValueC = Instance.new("UICorner")
 				KeybindValueC.CornerRadius = UDim.new(0, 6)
 				KeybindValueC.Parent = KeybindValue
+				
+				local KeybindL = Instance.new("UIListLayout")
+				KeybindL.Name = "KeybindL"
+				KeybindL.Parent = KeybindBtn
+				KeybindL.HorizontalAlignment = Enum.HorizontalAlignment.Right
+				KeybindL.SortOrder = Enum.SortOrder.LayoutOrder
+				KeybindL.VerticalAlignment = Enum.VerticalAlignment.Center
 				
 				local UIPadding = Instance.new("UIPadding")
 				UIPadding.Parent = KeybindBtn
@@ -1363,17 +1120,17 @@ function library.new(library, name)
 				local TextboxBack = Instance.new("TextButton")
 				TextboxBack.Name = "TextboxBack"
 				TextboxBack.Parent = TextboxModule
-				TextboxBack.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				TextboxBack.BackgroundColor3 = currentColors.Secondary
 				TextboxBack.BackgroundTransparency = 0.3
 				TextboxBack.Size = UDim2.new(1, 0, 1, 0)
 				TextboxBack.AutoButtonColor = false
 				TextboxBack.Font = Enum.Font.GothamSemibold
 				TextboxBack.Text = "   " .. text
-				TextboxBack.TextColor3 = ThemeManager:GetColor("Text")
+				TextboxBack.TextColor3 = currentColors.Text
 				TextboxBack.TextSize = 15
 				TextboxBack.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(TextboxBack, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(TextboxBack)
 				
 				local TextboxBackC = Instance.new("UICorner")
 				TextboxBackC.CornerRadius = UDim.new(0, 6)
@@ -1382,7 +1139,7 @@ function library.new(library, name)
 				local BoxBG = Instance.new("TextButton")
 				BoxBG.Name = "BoxBG"
 				BoxBG.Parent = TextboxBack
-				BoxBG.BackgroundColor3 = ThemeManager:GetColor("Primary")
+				BoxBG.BackgroundColor3 = currentColors.Primary
 				BoxBG.BackgroundTransparency = 0.5
 				BoxBG.Position = UDim2.new(1, -100, 0.5, -14)
 				BoxBG.Size = UDim2.new(0, 90, 0, 28)
@@ -1400,14 +1157,22 @@ function library.new(library, name)
 				TextBox.Size = UDim2.new(1, 0, 1, 0)
 				TextBox.Font = Enum.Font.Gotham
 				TextBox.Text = default
-				TextBox.TextColor3 = ThemeManager:GetColor("Text")
-				TextBox.PlaceholderColor3 = ThemeManager:GetColor("Placeholder")
+				TextBox.TextColor3 = currentColors.Text
+				TextBox.PlaceholderColor3 = currentColors.Placeholder
 				TextBox.TextSize = 14
 				TextBox.ClearTextOnFocus = false
 				
-				local UIPadding = Instance.new("UIPadding")
-				UIPadding.Parent = TextboxBack
-				UIPadding.PaddingRight = UDim.new(0, 6)
+				local TextboxBackL = Instance.new("UIListLayout")
+				TextboxBackL.Name = "TextboxBackL"
+				TextboxBackL.Parent = TextboxBack
+				TextboxBackL.HorizontalAlignment = Enum.HorizontalAlignment.Right
+				TextboxBackL.SortOrder = Enum.SortOrder.LayoutOrder
+				TextboxBackL.VerticalAlignment = Enum.VerticalAlignment.Center
+				
+				local TextboxBackP = Instance.new("UIPadding")
+				TextboxBackP.Name = "TextboxBackP"
+				TextboxBackP.Parent = TextboxBack
+				TextboxBackP.PaddingRight = UDim.new(0, 6)
 				
 				TextBox.FocusLost:Connect(function()
 					if TextBox.Text == "" then
@@ -1446,17 +1211,17 @@ function library.new(library, name)
 				local SliderBack = Instance.new("TextButton")
 				SliderBack.Name = "SliderBack"
 				SliderBack.Parent = SliderModule
-				SliderBack.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				SliderBack.BackgroundColor3 = currentColors.Secondary
 				SliderBack.BackgroundTransparency = 0.3
 				SliderBack.Size = UDim2.new(1, 0, 1, 0)
 				SliderBack.AutoButtonColor = false
 				SliderBack.Font = Enum.Font.GothamSemibold
 				SliderBack.Text = "   " .. text
-				SliderBack.TextColor3 = ThemeManager:GetColor("Text")
+				SliderBack.TextColor3 = currentColors.Text
 				SliderBack.TextSize = 15
 				SliderBack.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(SliderBack, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(SliderBack)
 				
 				local SliderBackC = Instance.new("UICorner")
 				SliderBackC.CornerRadius = UDim.new(0, 6)
@@ -1466,7 +1231,7 @@ function library.new(library, name)
 				SliderBar.Name = "SliderBar"
 				SliderBar.Parent = SliderBack
 				SliderBar.AnchorPoint = Vector2.new(0, 0.5)
-				SliderBar.BackgroundColor3 = ThemeManager:GetColor("Primary")
+				SliderBar.BackgroundColor3 = currentColors.Primary
 				SliderBar.BackgroundTransparency = 0.5
 				SliderBar.BorderSizePixel = 0
 				SliderBar.Position = UDim2.new(0.5, -60, 0.5, 0)
@@ -1479,7 +1244,7 @@ function library.new(library, name)
 				local SliderPart = Instance.new("Frame")
 				SliderPart.Name = "SliderPart"
 				SliderPart.Parent = SliderBar
-				SliderPart.BackgroundColor3 = ThemeManager:GetColor("Accent")
+				SliderPart.BackgroundColor3 = currentColors.Accent
 				SliderPart.Size = UDim2.new(0.5, 0, 1, 0)
 				
 				local SliderPartC = Instance.new("UICorner")
@@ -1489,7 +1254,7 @@ function library.new(library, name)
 				local SliderValBG = Instance.new("TextButton")
 				SliderValBG.Name = "SliderValBG"
 				SliderValBG.Parent = SliderBack
-				SliderValBG.BackgroundColor3 = ThemeManager:GetColor("Primary")
+				SliderValBG.BackgroundColor3 = currentColors.Primary
 				SliderValBG.BackgroundTransparency = 0.5
 				SliderValBG.Position = UDim2.new(1, -45, 0.5, -14)
 				SliderValBG.Size = UDim2.new(0, 40, 0, 28)
@@ -1508,7 +1273,7 @@ function library.new(library, name)
 				SliderValue.Size = UDim2.new(1, 0, 1, 0)
 				SliderValue.Font = Enum.Font.GothamSemibold
 				SliderValue.Text = tostring(default)
-				SliderValue.TextColor3 = ThemeManager:GetColor("Text")
+				SliderValue.TextColor3 = currentColors.Text
 				SliderValue.TextSize = 14
 				
 				local MinSlider = Instance.new("TextButton")
@@ -1519,7 +1284,7 @@ function library.new(library, name)
 				MinSlider.Size = UDim2.new(0, 20, 0, 20)
 				MinSlider.Font = Enum.Font.GothamBold
 				MinSlider.Text = "-"
-				MinSlider.TextColor3 = ThemeManager:GetColor("Text")
+				MinSlider.TextColor3 = currentColors.Text
 				MinSlider.TextSize = 20
 				
 				local AddSlider = Instance.new("TextButton")
@@ -1531,7 +1296,7 @@ function library.new(library, name)
 				AddSlider.Size = UDim2.new(0, 20, 0, 20)
 				AddSlider.Font = Enum.Font.GothamBold
 				AddSlider.Text = "+"
-				AddSlider.TextColor3 = ThemeManager:GetColor("Text")
+				AddSlider.TextColor3 = currentColors.Text
 				AddSlider.TextSize = 20
 				
 				local funcs = {
@@ -1636,7 +1401,7 @@ function library.new(library, name)
 				local DropdownTop = Instance.new("TextButton")
 				DropdownTop.Name = "DropdownTop"
 				DropdownTop.Parent = DropdownModule
-				DropdownTop.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+				DropdownTop.BackgroundColor3 = currentColors.Secondary
 				DropdownTop.BackgroundTransparency = 0.3
 				DropdownTop.Size = UDim2.new(1, 0, 0, 40)
 				DropdownTop.AutoButtonColor = false
@@ -1644,7 +1409,7 @@ function library.new(library, name)
 				DropdownTop.Text = ""
 				DropdownTop.TextXAlignment = Enum.TextXAlignment.Left
 				
-				CreateGlassEffect(DropdownTop, nil, ThemeManager.currentTheme)
+				CreateGlassEffect(DropdownTop)
 				
 				local DropdownTopC = Instance.new("UICorner")
 				DropdownTopC.CornerRadius = UDim.new(0, 6)
@@ -1659,7 +1424,7 @@ function library.new(library, name)
 				DropdownText.Font = Enum.Font.GothamSemibold
 				DropdownText.PlaceholderText = text
 				DropdownText.Text = ""
-				DropdownText.TextColor3 = ThemeManager:GetColor("Text")
+				DropdownText.TextColor3 = currentColors.Text
 				DropdownText.TextSize = 15
 				DropdownText.TextXAlignment = Enum.TextXAlignment.Left
 				DropdownText.ClearTextOnFocus = false
@@ -1673,7 +1438,7 @@ function library.new(library, name)
 				DropdownOpen.Size = UDim2.new(0, 20, 0, 20)
 				DropdownOpen.Font = Enum.Font.GothamBold
 				DropdownOpen.Text = "+"
-				DropdownOpen.TextColor3 = ThemeManager:GetColor("Text")
+				DropdownOpen.TextColor3 = currentColors.Text
 				DropdownOpen.TextSize = 20
 				
 				local DropdownModuleL = Instance.new("UIListLayout")
@@ -1688,16 +1453,16 @@ function library.new(library, name)
 						local Option = Instance.new("TextButton")
 						Option.Name = "Option_" .. option
 						Option.Parent = DropdownModule
-						Option.BackgroundColor3 = ThemeManager:GetColor("Secondary")
+						Option.BackgroundColor3 = currentColors.Secondary
 						Option.BackgroundTransparency = 0.3
 						Option.Size = UDim2.new(1, 0, 0, 32)
 						Option.AutoButtonColor = false
 						Option.Font = Enum.Font.Gotham
 						Option.Text = option
-						Option.TextColor3 = ThemeManager:GetColor("Text")
+						Option.TextColor3 = currentColors.Text
 						Option.TextSize = 14
 						
-						CreateGlassEffect(Option, nil, ThemeManager.currentTheme)
+						CreateGlassEffect(Option)
 						
 						local OptionC = Instance.new("UICorner")
 						OptionC.CornerRadius = UDim.new(0, 6)
@@ -1755,28 +1520,16 @@ function library.new(library, name)
 				return funcs
 			end
 			
+			section.TextBox = section.Textbox
+			section.textbox = section.Textbox
+			section.KeyBind = section.Keybind
+			section.keybind = section.Keybind
+			
 			return section
 		end
 		
 		return tab
 	end
-	
-	function window:SetTheme(themeName)
-		return ThemeManager:SetTheme(themeName)
-	end
-	
-	function window:RegisterCustomTheme(name, colors)
-		return ThemeManager:RegisterCustomTheme(name, colors)
-	end
-	
-	function window:GetCurrentTheme()
-		return ThemeManager.currentTheme
-	end
-	
-	-- 启动时加载保存的主题
-	ThemeManager:LoadTheme()
-	ThemeManager:SetTheme(ThemeManager.currentTheme, true)
-	InitializeThemeDropdown()
 	
 	return window
 end
