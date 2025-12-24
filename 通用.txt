@@ -14,24 +14,25 @@ local services = setmetatable({}, {
 
 local mouse = services.Players.LocalPlayer:GetMouse()
 
--- ========== 现代玻璃拟态主题系统 ==========
+-- ========== 增强现代主题系统 ==========
 local Theme = {
 	Primary = Color3.fromRGB(30, 136, 229),
 	PrimaryDark = Color3.fromRGB(25, 118, 210),
-	Secondary = Color3.fromRGB(156, 39, 176),
+	Secondary = Color3.fromRGB(0, 200, 255),
 	Background = Color3.fromRGB(12, 12, 12),
 	Surface = Color3.fromRGB(25, 25, 25),
 	SurfaceElevated = Color3.fromRGB(35, 35, 35),
-	SurfaceLow = Color3.fromRGB(20, 20, 20),
-	TextPrimary = Color3.fromRGB(255, 255, 255),
-	TextSecondary = Color3.fromRGB(200, 200, 200),
-	TextHint = Color3.fromRGB(150, 150, 150),
+	Overlay = Color3.fromRGB(45, 45, 45),
 	Success = Color3.fromRGB(46, 204, 113),
 	Warning = Color3.fromRGB(241, 196, 15),
 	Error = Color3.fromRGB(231, 76, 60),
+	TextPrimary = Color3.fromRGB(255, 255, 255),
+	TextSecondary = Color3.fromRGB(200, 200, 200),
+	TextHint = Color3.fromRGB(150, 150, 150),
+	Accent = Color3.fromRGB(100, 181, 246),
 	Transparency = {
 		High = 0.1,
-		Medium = 0.2,
+		Medium = 0.25,
 		Low = 0.4,
 		VeryLow = 0.6,
 	},
@@ -43,9 +44,9 @@ local Theme = {
 	},
 }
 
--- ========== 增强的Tween系统（带动画队列） ==========
+-- ========== 增强Tween系统 ==========
 function Tween(obj, duration, properties, style, direction)
-	style = style or "Quad"
+	style = style or "Quint"
 	direction = direction or "Out"
 	local tweenInfo = TweenInfo.new(
 		duration,
@@ -60,9 +61,10 @@ function Tween(obj, duration, properties, style, direction)
 	return tween
 end
 
--- ========== 涟漪效果（带颜色自定义） ==========
-function CreateRipple(obj, color)
+-- ========== 涟漪效果（增强版）==========
+function CreateRipple(obj, color, sizeMultiplier)
 	color = color or Theme.Primary
+	sizeMultiplier = sizeMultiplier or 1
 	spawn(function()
 		if not obj.ClipsDescendants then
 			obj.ClipsDescendants = true
@@ -72,9 +74,9 @@ function CreateRipple(obj, color)
 		ripple.Name = "Ripple"
 		ripple.Parent = obj
 		ripple.BackgroundTransparency = 1
-		ripple.ZIndex = 10
+		ripple.ZIndex = obj.ZIndex + 1 or 10
 		ripple.Image = "rbxassetid://2708891598"
-		ripple.ImageTransparency = 0.7
+		ripple.ImageTransparency = 0.8
 		ripple.ImageColor3 = color
 		ripple.ScaleType = Enum.ScaleType.Fit
 		
@@ -82,101 +84,29 @@ function CreateRipple(obj, color)
 		ripple.Position = UDim2.new(0, x, 0, y)
 		ripple.Size = UDim2.new(0, 0, 0, 0)
 		
-		Tween(ripple, 0.6, {
-			Position = UDim2.new(-5.5, 0, -5.5, 0),
-			Size = UDim2.new(12, 0, 12, 0),
+		Tween(ripple, 0.7, {
+			Position = UDim2.new(-5.5 * sizeMultiplier, 0, -5.5 * sizeMultiplier, 0),
+			Size = UDim2.new(12 * sizeMultiplier, 0, 12 * sizeMultiplier, 0),
 			ImageTransparency = 1
 		}, "Exponential", "Out")
 		
-		wait(0.6)
+		wait(0.7)
 		ripple:Destroy()
 	end)
 end
 
--- ========== 通知系统（新增） ==========
-function library:Notification(message, duration, type)
-	duration = duration or 3
-	type = type or "info"
-	
-	local Notification = Instance.new("Frame")
-	Notification.Name = "Notification"
-	Notification.Parent = services.CoreGui:FindFirstChild("ModernUI") or services.CoreGui
-	Notification.BackgroundColor3 = Theme.SurfaceElevated
-	Notification.BackgroundTransparency = 0.1
-	Notification.BorderSizePixel = 0
-	Notification.Position = UDim2.new(1, 20, 0, 20)
-	Notification.Size = UDim2.new(0, 300, 0, 60)
-	Notification.ZIndex = 1000
-	Notification.ClipsDescendants = true
-	
-	local NotificationCorner = Instance.new("UICorner")
-	NotificationCorner.CornerRadius = Theme.Radius.Medium
-	NotificationCorner.Parent = Notification
-	
-	local NotificationStroke = Instance.new("UIStroke")
-	NotificationStroke.Color = type == "success" and Theme.Success or 
-							   type == "warning" and Theme.Warning or 
-							   type == "error" and Theme.Error or Theme.Primary
-	NotificationStroke.Thickness = 1
-	NotificationStroke.Transparency = 0.5
-	NotificationStroke.Parent = Notification
-	
-	local NotificationIcon = Instance.new("ImageLabel")
-	NotificationIcon.Name = "Icon"
-	NotificationIcon.Parent = Notification
-	NotificationIcon.BackgroundTransparency = 1
-	NotificationIcon.Position = UDim2.new(0, 15, 0.5, -15)
-	NotificationIcon.Size = UDim2.new(0, 30, 0, 30)
-	NotificationIcon.Image = type == "success" and "rbxassetid://6031068420" or 
-							type == "warning" and "rbxassetid://6031071053" or 
-							type == "error" and "rbxassetid://6031075934" or 
-							"rbxassetid://6031075934"
-	NotificationIcon.ImageColor3 = type == "success" and Theme.Success or 
-								 type == "warning" and Theme.Warning or 
-								 type == "error" and Theme.Error or Theme.Primary
-	NotificationIcon.ZIndex = 1001
-	
-	local NotificationText = Instance.new("TextLabel")
-	NotificationText.Name = "Text"
-	NotificationText.Parent = Notification
-	NotificationText.BackgroundTransparency = 1
-	NotificationText.Position = UDim2.new(0, 60, 0, 10)
-	NotificationText.Size = UDim2.new(1, -70, 1, -20)
-	NotificationText.Font = Enum.Font.Gotham
-	NotificationText.Text = message
-	NotificationText.TextColor3 = Theme.TextPrimary
-	NotificationText.TextSize = 14
-	NotificationText.TextWrapped = true
-	NotificationText.ZIndex = 1001
-	
-	-- 滑入动画
-	Tween(Notification, 0.5, {
-		Position = UDim2.new(1, -20, 0, 20)
-	}, "Quart", "Out")
-	
-	wait(duration)
-	
-	-- 滑出动画
-	Tween(Notification, 0.5, {
-		Position = UDim2.new(1, 20, 0, 20)
-	}, "Quart", "Out")
-	
-	wait(0.5)
-	Notification:Destroy()
-end
-
--- ========== 主UI创建 ==========
+-- ========== 主UI创建（增强版）==========
 function library.new(library, name)
 	-- 清理旧UI
 	for _, v in pairs(services.CoreGui:GetChildren() do
-		if v.Name == "ModernUI" then
+		if v.Name == "ModernUILibrary" then
 			v:Destroy()
 		end
 	end
 	
 	-- 创建ScreenGui
 	local ui = Instance.new("ScreenGui")
-	ui.Name = "ModernUI"
+	ui.Name = "ModernUILibrary"
 	ui.Parent = services.CoreGui
 	ui.ResetOnSpawn = false
 	ui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -185,31 +115,43 @@ function library.new(library, name)
 		syn.protect_gui(ui)
 	end
 	
-	-- 主容器（玻璃拟态效果）
+	-- 主容器（增强玻璃拟态）
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
 	Main.Parent = ui
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
 	Main.BackgroundColor3 = Theme.Surface
-	Main.BackgroundTransparency = Theme.Transparency.VeryLow
+	Main.BackgroundTransparency = Theme.Transparency.Medium
 	Main.BorderSizePixel = 0
-	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Main.Size = UDim2.new(0, 800, 0, 520) -- 增大尺寸以适应大型脚本
+	Main.Position = UDim.new(0.5, 0)
+	Main.Size = UDim2.new(0, 700, 0, 450)
 	Main.Active = true
+	Main.ZIndex = 5
 	
-	-- 玻璃模糊效果
+	-- 多层模糊效果
 	local Blur = Instance.new("UIBlurEffect")
 	Blur.Name = "Blur"
 	Blur.Parent = Main
-	Blur.Size = 25
+	Blur.Size = 24
 	
-	-- 玻璃描边
+	-- 玻璃描边（渐变）
 	local Stroke = Instance.new("UIStroke")
 	Stroke.Name = "Stroke"
 	Stroke.Parent = Main
 	Stroke.Color = Theme.Primary
 	Stroke.Thickness = 1
-	Stroke.Transparency = 0.8
+	Stroke.Transparency = 0.6
+	Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	
+	-- 高光效果
+	local Highlight = Instance.new("Frame")
+	Highlight.Name = "Highlight"
+	Highlight.Parent = Main
+	Highlight.BackgroundColor3 = Theme.Accent
+	Highlight.BackgroundTransparency = 0.95
+	Highlight.BorderSizePixel = 0
+	Highlight.Size = UDim2.new(1, 0, 0, 1)
+	Highlight.ZIndex = 6
 	
 	-- 圆角
 	local MainCorner = Instance.new("UICorner")
@@ -217,13 +159,13 @@ function library.new(library, name)
 	MainCorner.CornerRadius = Theme.Radius.XLarge
 	MainCorner.Parent = Main
 	
-	-- 阴影效果
-	local Shadow = Instance.new("ImageLabel")
+	-- 增强阴影效果
+	local Shadow = Instance.create("ImageLabel")
 	Shadow.Name = "Shadow"
 	Shadow.Parent = Main
 	Shadow.BackgroundTransparency = 1
-	Shadow.Size = UDim2.new(1, 30, 1, 30)
-	Shadow.Position = UDim2.new(0, -15, 0, -15)
+	Shadow.Size = UDim2.new(1, 40, 1, 40)
+	Shadow.Position = UDim2.new(0, -20, 0, -20)
 	Shadow.ZIndex = -1
 	Shadow.Image = "rbxassetid://6015897843"
 	Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
@@ -231,177 +173,130 @@ function library.new(library, name)
 	Shadow.ScaleType = Enum.ScaleType.Slice
 	Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- ===== 删除按钮（右上角）=====
+	-- ===== 窗口控制按钮 =====
+	local WindowControls = Instance.new("Frame")
+	WindowControls.Name = "WindowControls"
+	WindowControls.Parent = Main
+	WindowControls.BackgroundTransparency = 1
+	WindowControls.Position = UDim.new(1, -130, 0, 15)
+	WindowControls.Size = UDim2.new(0, 115, 0, 30)
+	WindowControls.ZIndex = 100
+	
+	-- 最小化按钮
+	local MinimizeBtn = Instance.new("TextButton")
+	MinimizeBtn.Name = "MinimizeBtn"
+	MinimizeBtn.Parent = WindowControls
+	MinimizeBtn.BackgroundColor3 = Theme.Warning
+	MinimizeBtn.BackgroundTransparency = 0.3
+	MinimizeBtn.BorderSizePixel = 0
+	MinimizeBtn.Position = UDim2.new(0, 0, 0, 0)
+	MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+	MinimizeBtn.AutoButtonColor = false
+	MinimizeBtn.Font = Enum.Font.GothamBold
+	MinimizeBtn.Text = "−"
+	MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	MinimizeBtn.TextSize = 24
+	MinimizeBtn.ZIndex = 101
+	
+	local MinimizeBtnCorner = Instance.new("UICorner")
+	MinimizeBtnCorner.CornerRadius = Theme.Radius.Medium
+	MinimizeBtnCorner.Parent = MinimizeBtn
+	
+	-- 关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
-	CloseBtn.Parent = Main
+	CloseBtn.Parent = WindowControls
 	CloseBtn.BackgroundColor3 = Theme.Error
 	CloseBtn.BackgroundTransparency = 0.3
 	CloseBtn.BorderSizePixel = 0
-	CloseBtn.Position = UDim2.new(1, -50, 0, 10)
-	CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+	CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+	CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 	CloseBtn.AutoButtonColor = false
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.Text = "×"
 	CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	CloseBtn.TextSize = 28
-	CloseBtn.ZIndex = 100
+	CloseBtn.TextSize = 24
+	CloseBtn.ZIndex = 101
 	
 	local CloseBtnCorner = Instance.new("UICorner")
 	CloseBtnCorner.CornerRadius = Theme.Radius.Medium
 	CloseBtnCorner.Parent = CloseBtn
 	
+	-- 按钮交互效果
+	MinimizeBtn.MouseEnter:Connect(function()
+		Tween(MinimizeBtn, 0.2, { BackgroundTransparency = 0.1, Size = UDim2.new(0, 32, 0, 32) })
+	end)
+	
+	MinimizeBtn.MouseLeave:Connect(function()
+		Tween(MinimizeBtn, 0.2, { BackgroundTransparency = 0.3, Size = UDim2.new(0, 30, 0, 30) })
+	end)
+	
 	CloseBtn.MouseEnter:Connect(function()
-		Tween(CloseBtn, 0.2, { 
-			BackgroundTransparency = 0.1, 
-			Size = UDim2.new(0, 42, 0, 42),
-			BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-		})
+		Tween(CloseBtn, 0.2, { BackgroundTransparency = 0.1, Size = UDim2.new(0, 32, 0, 32) })
 	end)
 	
 	CloseBtn.MouseLeave:Connect(function()
-		Tween(CloseBtn, 0.2, { 
-			BackgroundTransparency = 0.3, 
-			Size = UDim2.new(0, 40, 0, 40),
-			BackgroundColor3 = Theme.Error
-		})
+		Tween(CloseBtn, 0.2, { BackgroundTransparency = 0.3, Size = UDim2.new(0, 30, 0, 30) })
 	end)
 	
 	CloseBtn.MouseButton1Click:Connect(function()
-		CreateRipple(CloseBtn, Color3.fromRGB(255, 255, 255))
+		CreateRipple(CloseBtn, Color3.fromRGB(255, 255, 255), 1.5)
 		wait(0.2)
 		ui:Destroy()
 	end)
 	
-	-- ===== 搜索栏（新增）=====
-	local SearchBar = Instance.new("Frame")
-	SearchBar.Name = "SearchBar"
-	SearchBar.Parent = Main
-	SearchBar.BackgroundColor3 = Theme.SurfaceElevated
-	SearchBar.BackgroundTransparency = 0.2
-	SearchBar.BorderSizePixel = 0
-	SearchBar.Position = UDim2.new(0, 20, 0, 10)
-	SearchBar.Size = UDim2.new(1, -100, 0, 40)
-	SearchBar.ZIndex = 50
-	
-	local SearchBarCorner = Instance.new("UICorner")
-	SearchBarCorner.CornerRadius = Theme.Radius.Medium
-	SearchBarCorner.Parent = SearchBar
-	
-	local SearchBarStroke = Instance.new("UIStroke")
-	SearchBarStroke.Color = Theme.Primary
-	SearchBarStroke.Thickness = 1
-	SearchBarStroke.Transparency = 0.7
-	SearchBarStroke.Parent = SearchBar
-	
-	local SearchIcon = Instance.new("ImageLabel")
-	SearchIcon.Name = "SearchIcon"
-	SearchIcon.Parent = SearchBar
-	SearchIcon.BackgroundTransparency = 1
-	SearchIcon.Position = UDim2.new(0, 12, 0.5, -12)
-	SearchIcon.Size = UDim2.new(0, 24, 0, 24)
-	SearchIcon.Image = "rbxassetid://6031075934"
-	SearchIcon.ImageColor3 = Theme.TextHint
-	SearchIcon.ZIndex = 51
-	
-	local SearchBox = Instance.new("TextBox")
-	SearchBox.Name = "SearchBox"
-	SearchBox.Parent = SearchBar
-	SearchBox.BackgroundTransparency = 1
-	SearchBox.Position = UDim2.new(0, 45, 0, 0)
-	SearchBox.Size = UDim2.new(1, -50, 1, 0)
-	SearchBox.Font = Enum.Font.Gotham
-	SearchBox.Text = ""
-	SearchBox.PlaceholderText = "搜索功能、设置或标签页..."
-	SearchBox.PlaceholderColor3 = Theme.TextHint
-	SearchBox.TextColor3 = Theme.TextPrimary
-	SearchBox.TextSize = 14
-	SearchBox.ZIndex = 51
-	
-	-- 搜索功能逻辑
-	local searchResults = {}
-	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-		local searchText = SearchBox.Text:lower()
-		if searchText == "" then
-			-- 恢复所有内容
-			for _, tab in pairs(searchResults) do
-				tab.button.Visible = true
-				tab.page.Visible = (library.currentTab and library.currentTab[1] == tab.button)
-			end
-			return
-		end
-		
-		searchResults = {}
-		for _, tab in pairs(library.tabs or {}) do
-			local hasMatch = false
-			local tabName = tab.button.TabText.Text:lower()
-			
-			-- 搜索标签页名称
-			if tabName:find(searchText) then
-				hasMatch = true
-			end
-			
-			-- 搜索区域内的内容
-			for _, section in pairs(tab.sections or {}) do
-				local sectionName = section.SectionTitle.Text:lower()
-				if sectionName:find(searchText) then
-					hasMatch = true
-					break
-				end
-				
-				-- 搜索控件标签
-				for _, child in pairs(section.Content:GetChildren() do
-					if child:IsA("Frame") then
-						local label = child:FindFirstChild("ToggleLabel") or 
-									child:FindFirstChild("SliderLabel") or 
-									child:FindFirstChild("Label") or
-									child:FindFirstChild("TextLabel", true)
-						if label and label.Text:lower():find(searchText) then
-							hasMatch = true
-							break
-						end
-					end
-				end
-			end
-			
-			tab.button.Visible = hasMatch
-			if not hasMatch then
-				tab.page.Visible = false
-			elseif library.currentTab and library.currentTab[1] == tab.button then
-				tab.page.Visible = true
-			end
-			
-			table.insert(searchResults, tab)
-		end
+	MinimizeBtn.MouseButton1Click:Connect(function()
+		CreateRipple(MinimizeBtn, Color3.fromRGB(255, 255, 255), 1.5)
+		wait(0.2)
+		Main.Visible = not Main.Visible
 	end)
 	
-	-- 侧边栏
+	-- 侧边栏（玻璃效果增强）
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Name = "Sidebar"
 	Sidebar.Parent = Main
 	Sidebar.BackgroundColor3 = Theme.Surface
-	Sidebar.BackgroundTransparency = 0.1
+	Sidebar.BackgroundTransparency = 0.15
 	Sidebar.BorderSizePixel = 0
-	Sidebar.Size = UDim2.new(0, 160, 1, -70) -- 调整高度
-	Sidebar.Position = UDim2.new(0, 0, 0, 70) -- 下移以容纳搜索栏
+	Sidebar.Size = UDim2.new(0, 160, 1, 0)
+	Sidebar.ZIndex = 6
 	
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.Name = "SidebarCorner"
-	SidebarCorner.CornerRadius = Theme.Radius.Large
+	SidebarCorner.CornerRadius = Theme.Radius.XLarge
 	SidebarCorner.Parent = Sidebar
+	
+	-- 侧边栏分隔线
+	local SidebarSeparator = Instance.new("Frame")
+	SidebarSeparator.Name = "SidebarSeparator"
+	SidebarSeparator.Parent = Sidebar
+	SidebarSeparator.BackgroundColor3 = Theme.Primary
+	SidebarSeparator.BackgroundTransparency = 0.7
+	SidebarSeparator.BorderSizePixel = 0
+	SidebarSeparator.Position = UDim2.new(1, -1, 0, 0)
+	SidebarSeparator.Size = UDim2.new(0, 1, 1, 0)
+	SidebarSeparator.ZIndex = 7
+	
+	-- 标题区域
+	local TitleContainer = Instance.new("Frame")
+	TitleContainer.Name = "TitleContainer"
+	TitleContainer.Parent = Sidebar
+	TitleContainer.BackgroundTransparency = 1
+	TitleContainer.Size = UDim2.new(1, 0, 0, 70)
 	
 	-- 标题
 	local Title = Instance.new("TextLabel")
 	Title.Name = "Title"
-	Title.Parent = Sidebar
+	Title.Parent = TitleContainer
 	Title.BackgroundTransparency = 1
-	Title.Size = UDim2.new(1, 0, 0, 50)
-	Title.Position = UDim2.new(0, 0, 0, 10)
+	Title.Size = UDim2.new(1, 0, 0, 40)
+	Title.Position = UDim2.new(0, 0, 0, 20)
 	Title.Font = Enum.Font.GothamBold
 	Title.Text = name or "SCRIPT"
 	Title.TextColor3 = Theme.TextPrimary
-	Title.TextSize = 20 -- 增大字体
+	Title.TextSize = 20
 	Title.TextXAlignment = Enum.TextXAlignment.Center
+	Title.ZIndex = 8
 	
 	-- 标题渐变动画
 	local TitleGradient = Instance.new("UIGradient")
@@ -411,32 +306,73 @@ function library.new(library, name)
 	})
 	TitleGradient.Parent = Title
 	
-	-- 标签按钮容器
+	-- 智能搜索框
+	local SearchContainer = Instance.new("Frame")
+	SearchContainer.Name = "SearchContainer"
+	SearchContainer.Parent = Sidebar
+	SearchContainer.BackgroundColor3 = Theme.SurfaceElevated
+	SearchContainer.BackgroundTransparency = 0.2
+	SearchContainer.BorderSizePixel = 0
+	SearchContainer.Position = UDim2.new(0, 10, 0, 85)
+	SearchContainer.Size = UDim2.new(1, -20, 0, 40)
+	SearchContainer.ZIndex = 8
+	
+	local SearchContainerCorner = Instance.new("UICorner")
+	SearchContainerCorner.CornerRadius = Theme.Radius.Medium
+	SearchContainerCorner.Parent = SearchContainer
+	
+	local SearchIcon = Instance.new("ImageLabel")
+	SearchIcon.Name = "SearchIcon"
+	SearchIcon.Parent = SearchContainer
+	SearchIcon.BackgroundTransparency = 1
+	SearchIcon.Position = UDim2.new(0, 10, 0, 10)
+	SearchIcon.Size = UDim2.new(0, 20, 0, 20)
+	SearchIcon.Image = "rbxassetid://6031154873"
+	SearchIcon.ImageColor3 = Theme.TextHint
+	SearchIcon.ZIndex = 8
+	
+	local SearchBox = Instance.new("TextBox")
+	SearchBox.Name = "SearchBox"
+	SearchBox.Parent = SearchContainer
+	SearchBox.BackgroundTransparency = 1
+	SearchBox.Position = UDim2.new(0, 40, 0, 0)
+	SearchBox.Size = UDim2.new(1, -50, 1, 0)
+	SearchBox.Font = Enum.Font.Gotham
+	SearchBox.Text = ""
+	SearchBox.PlaceholderText = "搜索标签页..."
+	SearchBox.PlaceholderColor3 = Theme.TextHint
+	SearchBox.TextColor3 = Theme.TextPrimary
+	SearchBox.TextSize = 14
+	SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+	SearchBox.ZIndex = 8
+	SearchBox.ClearTextOnFocus = false
+	
+	-- 标签页按钮容器
 	local TabContainer = Instance.new("ScrollingFrame")
 	TabContainer.Name = "TabContainer"
 	TabContainer.Parent = Sidebar
 	TabContainer.BackgroundTransparency = 1
 	TabContainer.BorderSizePixel = 0
-	TabContainer.Position = UDim2.new(0, 0, 0, 70)
-	TabContainer.Size = UDim2.new(1, 0, 1, -70)
-	TabContainer.ScrollBarThickness = 2
-	TabContainer.ScrollBarImageColor3 = Theme.Primary
-	TabContainer.ScrollBarImageTransparency = 0.7
+	TabContainer.Position = UDim2.new(0, 0, 0, 135)
+	TabContainer.Size = UDim2.new(1, 0, 0, 1)
+	TabContainer.ScrollBarThickness = 0
 	TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+	TabContainer.ZIndex = 7
 	
 	local TabListLayout = Instance.new("UIListLayout")
 	TabListLayout.Name = "TabListLayout"
 	TabListLayout.Parent = TabContainer
 	TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	TabListLayout.Padding = UDim.new(0, 8)
+	TabListLayout.Padding = UDim.new(0, 6)
 	
 	-- 内容区域
 	local Content = Instance.new("Frame")
 	Content.Name = "Content"
 	Content.Parent = Main
 	Content.BackgroundTransparency = 1
-	Content.Position = UDim2.new(0, 170, 0, 70) -- 调整位置
-	Content.Size = UDim2.new(1, -180, 1, -80) -- 调整大小
+	Content.Position = UDim2.new(0, 170, 0, 15)
+	Content.Size = UDim2.new(1, -185, 1, -30)
+	Content.ZIndex = 6
 	
 	-- 打开按钮
 	local OpenBtn = Instance.new("TextButton")
@@ -446,12 +382,13 @@ function library.new(library, name)
 	OpenBtn.BackgroundTransparency = 0.1
 	OpenBtn.BorderSizePixel = 0
 	OpenBtn.Position = UDim2.new(0, 20, 0, 20)
-	OpenBtn.Size = UDim2.new(0, 140, 0, 45)
+	OpenBtn.Size = UDim2.new(0, 120, 0, 45)
 	OpenBtn.Font = Enum.Font.GothamBold
 	OpenBtn.Text = "打开菜单"
 	OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	OpenBtn.TextSize = 16
 	OpenBtn.Visible = true
+	OpenBtn.ZIndex = 5
 	
 	local OpenBtnCorner = Instance.new("UICorner")
 	OpenBtnCorner.CornerRadius = Theme.Radius.Medium
@@ -463,31 +400,31 @@ function library.new(library, name)
 	OpenBtnStroke.Transparency = 0.5
 	OpenBtnStroke.Parent = OpenBtn
 	
-	-- 拖拽功能（改进版 - 限制窗口不超出屏幕）
+	-- 拖拽功能（优化版）
 	local dragging, dragInput, dragStart, startPos
+	local isMinimized = false
 	
 	Main.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or
 		   input.UserInputType == Enum.UserInputType.Touch then
-			-- 检查是否点击在关闭按钮或搜索栏上
-			if CloseBtn.Active and CloseBtn.AbsolutePosition.X < input.Position.X and
-			   input.Position.X < CloseBtn.AbsolutePosition.X + CloseBtn.AbsoluteSize.X and
-			   CloseBtn.AbsolutePosition.Y < input.Position.Y and
-			   input.Position.Y < CloseBtn.AbsolutePosition.Y + CloseBtn.AbsoluteSize.Y then
-				return
-			end
-			
-			if SearchBar.AbsolutePosition.X < input.Position.X and
-			   input.Position.X < SearchBar.AbsolutePosition.X + SearchBar.AbsoluteSize.X and
-			   SearchBar.AbsolutePosition.Y < input.Position.Y and
-			   input.Position.Y < SearchBar.AbsolutePosition.Y + SearchBar.AbsoluteSize.Y then
+			-- 检查是否点击在控制按钮上
+			local pos = input.Position
+			if (CloseBtn.Active and CloseBtn.AbsolutePosition.X < pos.X and 
+				pos.X < CloseBtn.AbsolutePosition.X + CloseBtn.AbsoluteSize.X and
+				CloseBtn.AbsolutePosition.Y < pos.Y and 
+				pos.Y < CloseBtn.AbsolutePosition.Y + CloseBtn.AbsoluteSize.Y) or
+			   (MinimizeBtn.Active and MinimizeBtn.AbsolutePosition.X < pos.X and 
+				pos.X < MinimizeBtn.AbsolutePosition.X + MinimizeBtn.AbsoluteSize.X and
+				MinimizeBtn.AbsolutePosition.Y < pos.Y and 
+				pos.Y < MinimizeBtn.AbsolutePosition.Y + MinimizeBtn.AbsoluteSize.Y) then
 				return
 			end
 			
 			dragging = true
 			dragStart = input.Position
 			startPos = Main.Position
-			Tween(Main, 0.1, { Size = UDim2.new(0, 810, 0, 530) })
+			Tween(Main, 0.15, { Size = UDim2.new(0, 710, 0, 460) })
+			Tween(Shadow, 0.15, { Size = UDim2.new(1, 50, 1, 50), Position = UDim2.new(0, -25, 0, -25) })
 		end
 	end)
 	
@@ -496,7 +433,11 @@ function library.new(library, name)
 		   input.UserInputType == Enum.UserInputType.Touch then
 			if dragging then
 				dragging = false
-				Tween(Main, 0.1, { Size = UDim2.new(0, 800, 0, 520) })
+				Tween(Main, 0.15, { Size = isMinimized and UDim2.new(0, 700, 0, 60) or UDim2.new(0, 700, 0, 450) })
+				Tween(Shadow, 0.15, { 
+					Size = isMinimized and UDim2.new(1, 30, 1, 30) or UDim2.new(1, 40, 1, 40),
+					Position = UDim2.new(0, -20, 0, -20)
+				})
 			end
 		end
 	end)
@@ -504,14 +445,10 @@ function library.new(library, name)
 	Main.InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 			local delta = input.Position - dragStart
-			local newX = startPos.X.Scale * Main.Parent.AbsoluteSize.X + startPos.X.Offset + delta.X
-			local newY = startPos.Y.Scale * Main.Parent.AbsoluteSize.Y + startPos.Y.Offset + delta.Y
-			
-			-- 限制在屏幕范围内
-			newX = math.clamp(newX, Main.AbsoluteSize.X / 2, Main.Parent.AbsoluteSize.X - Main.AbsoluteSize.X / 2)
-			newY = math.clamp(newY, Main.AbsoluteSize.Y / 2, Main.Parent.AbsoluteSize.Y - Main.AbsoluteSize.Y / 2)
-			
-			Main.Position = UDim2.new(0, newX - Main.AbsoluteSize.X / 2, 0, newY - Main.AbsoluteSize.Y / 2)
+			Main.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
 		end
 	end)
 	
@@ -519,10 +456,24 @@ function library.new(library, name)
 	OpenBtn.MouseButton1Click:Connect(function()
 		Main.Visible = not Main.Visible
 		if Main.Visible then
-			Tween(Main, 0.3, { Size = UDim2.new(0, 800, 0, 520) }, "Back", "Out")
-			Tween(OpenBtn, 0.2, { Rotation = 180 })
+			Tween(OpenBtn, 0.3, { Rotation = 180, BackgroundColor3 = Theme.Success }, "Back", "Out")
 		else
-			Tween(OpenBtn, 0.2, { Rotation = 0 })
+			Tween(OpenBtn, 0.3, { Rotation = 0, BackgroundColor3 = Theme.Primary }, "Back", "Out")
+		end
+	end)
+	
+	MinimizeBtn.MouseButton1Click:Connect(function()
+		isMinimized = not isMinimized
+		if isMinimized then
+			Tween(Main, 0.3, { Size = UDim2.new(0, 700, 0, 60) }, "Quad", "Out")
+			Tween(MinimizeBtn, 0.2, { Text = "+" })
+			Tween(Content, 0.3, { Size = UDim2.new(0, 0, 0, 0) })
+			Tween(Sidebar, 0.3, { Size = UDim2.new(0, 0, 1, 0) })
+		else
+			Tween(Main, 0.3, { Size = UDim2.new(0, 700, 0, 450) }, "Quad", "Out")
+			Tween(MinimizeBtn, 0.2, { Text = "−" })
+			Tween(Content, 0.3, { Size = UDim2.new(1, -185, 1, -30) })
+			Tween(Sidebar, 0.3, { Size = UDim2.new(0, 160, 1, 0) })
 		end
 	end)
 	
@@ -534,17 +485,19 @@ function library.new(library, name)
 		end
 	end)
 	
-	-- Tab切换功能
-	local function SwitchTab(newTab)
+	-- Tab切换功能（增强版）
+	local function SwitchTab(newTab, noAnim)
 		local oldTab = library.currentTab
 		if oldTab and oldTab[1] == newTab[1] then return end
 		
 		-- 旧标签淡出
 		if oldTab then
-			Tween(oldTab[1], 0.25, { BackgroundTransparency = 0.5 })
-			Tween(oldTab[1].TabText, 0.25, { TextTransparency = 0.5, TextColor3 = Theme.TextSecondary })
-			Tween(oldTab[1].TabIcon, 0.25, { ImageTransparency = 0.5, ImageColor3 = Theme.TextSecondary })
-			wait(0.2)
+			if not noAnim then
+				Tween(oldTab[1], 0.25, { BackgroundTransparency = 0.4 })
+				Tween(oldTab[1].TabText, 0.25, { TextTransparency = 0.5, TextColor3 = Theme.TextSecondary })
+				Tween(oldTab[1].TabIcon, 0.25, { ImageTransparency = 0.5, ImageColor3 = Theme.TextSecondary })
+				wait(0.2)
+			end
 			oldTab[2].Visible = false
 		end
 		
@@ -554,31 +507,33 @@ function library.new(library, name)
 		Tween(newTab[1], 0.25, { BackgroundTransparency = 0.1 })
 		Tween(newTab[1].TabText, 0.25, { TextTransparency = 0, TextColor3 = Theme.TextPrimary })
 		Tween(newTab[1].TabIcon, 0.25, { ImageTransparency = 0, ImageColor3 = Theme.Primary })
-		
-		-- 滚动到可视区域
-		local canvasY = TabListLayout.AbsoluteContentSize.Y
-		local tabY = newTab[1].AbsolutePosition.Y - TabContainer.AbsolutePosition.Y
-		-- 确保当前标签在可视区域内
+		Tween(Highlight, 0.3, { 
+			Position = UDim2.new(0, 0, 0, newTab[1].AbsolutePosition.Y - Sidebar.AbsolutePosition.Y),
+			Size = UDim2.new(1, 0, 0, newTab[1].AbsoluteSize.Y)
+		}, "Quad", "Out")
 	end
+	
+	-- 搜索功能逻辑
+	local allTabs = {}
+	local tabSearchData = {}
 	
 	-- 窗口对象
 	local window = {}
-	library.tabs = {}
-	library.sections = {}
 	
-	-- ========== 创建标签页 ==========
+	-- ========== 创建标签页（优化版）==========
 	function window.Tab(window, tabName, iconId)
 		iconId = iconId or "4370341699"
 		
-		-- 标签按钮（增大尺寸）
+		-- 标签按钮（优化尺寸）
 		local TabButton = Instance.new("Frame")
 		TabButton.Name = "TabButton"
 		TabButton.Parent = TabContainer
 		TabButton.BackgroundColor3 = Theme.SurfaceElevated
-		TabButton.BackgroundTransparency = 0.5
+		TabButton.BackgroundTransparency = library.currentTab == nil and 0.1 or 0.4
 		TabButton.BorderSizePixel = 0
-		TabButton.Size = UDim2.new(1, -20, 0, 55) -- 增大高度
+		TabButton.Size = UDim2.new(1, -20, 0, 40)
 		TabButton.Position = UDim2.new(0, 10, 0, 0)
+		TabButton.ZIndex = 8
 		
 		local TabBtnCorner = Instance.new("UICorner")
 		TabBtnCorner.CornerRadius = Theme.Radius.Medium
@@ -588,80 +543,92 @@ function library.new(library, name)
 		TabIcon.Name = "TabIcon"
 		TabIcon.Parent = TabButton
 		TabIcon.BackgroundTransparency = 1
-		TabIcon.Size = UDim2.new(0, 24, 0, 24) -- 增大图标
-		TabIcon.Position = UDim2.new(0, 15, 0, 15)
+		TabIcon.Size = UDim2.new(0, 18, 0, 18)
+		TabIcon.Position = UDim2.new(0, 15, 0, 11)
 		TabIcon.Image = ("rbxassetid://%s"):format(iconId)
-		TabIcon.ImageColor3 = Theme.TextSecondary
+		TabIcon.ImageColor3 = library.currentTab == nil and Theme.Primary or Theme.TextSecondary
 		
 		local TabText = Instance.new("TextLabel")
 		TabText.Name = "TabText"
 		TabText.Parent = TabButton
 		TabText.BackgroundTransparency = 1
-		TabText.Position = UDim2.new(0, 50, 0, 0) -- 调整位置
-		TabText.Size = UDim2.new(1, -55, 1, 0)
+		TabText.Position = UDim2.new(0, 40, 0, 0)
+		TabText.Size = UDim2.new(1, -50, 1, 0)
 		TabText.Font = Enum.Font.GothamSemibold
 		TabText.Text = tabName
-		TabText.TextColor3 = Theme.TextSecondary
-		TabText.TextSize = 15
+		TabText.TextColor3 = library.currentTab == nil and Theme.TextPrimary or Theme.TextSecondary
+		TabText.TextSize = 14
 		TabText.TextXAlignment = Enum.TextXAlignment.Left
+		TabText.TextTransparency = library.currentTab == nil and 0 or 0.5
 		
-		-- 标签页内容（带改进的滚动条）
+		-- 标签页内容
 		local TabPage = Instance.new("ScrollingFrame")
 		TabPage.Name = "TabPage"
 		TabPage.Parent = Content
 		TabPage.BackgroundTransparency = 1
 		TabPage.BorderSizePixel = 0
 		TabPage.Size = UDim2.new(1, 0, 1, 0)
-		TabPage.ScrollBarThickness = 4 -- 增大滚动条
+		TabPage.ScrollBarThickness = 4
 		TabPage.ScrollBarImageColor3 = Theme.Primary
-		TabPage.ScrollBarImageTransparency = 0.5
+		TabPage.ScrollBarImageTransparency = 0.6
 		TabPage.Visible = false
 		TabPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-		TabPage.ScrollBarInset = Enum.ScrollBarInset.Always -- 始终显示滚动条
+		TabPage.ScrollBarInset = Enum.ScrollBarInset.ScrollBar
+		TabPage.ZIndex = 6
 		
 		local PageLayout = Instance.new("UIListLayout")
 		PageLayout.Name = "PageLayout"
 		PageLayout.Parent = TabPage
 		PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		PageLayout.Padding = UDim.new(0, 15) -- 增大间距
+		PageLayout.Padding = UDim.new(0, 12)
 		
 		PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			TabPage.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
 		end)
 		
-		-- 按钮交互
+		-- 按钮交互（优化）
 		TabButton.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or
 			   input.UserInputType == Enum.UserInputType.Touch then
-				CreateRipple(TabButton, Theme.Primary)
+				CreateRipple(TabButton, Theme.Primary, 0.8)
 				SwitchTab({TabButton, TabPage})
 			end
 		end)
 		
 		TabButton.MouseEnter:Connect(function()
-			Tween(TabButton, 0.2, { BackgroundTransparency = 0.3 })
-			Tween(TabIcon, 0.2, { ImageTransparency = 0.3, ImageColor3 = Theme.TextPrimary })
-			Tween(TabText, 0.2, { TextTransparency = 0.3, TextColor3 = Theme.TextPrimary })
+			if library.currentTab and library.currentTab[1] ~= TabButton then
+				Tween(TabButton, 0.2, { BackgroundTransparency = 0.2 })
+				Tween(TabIcon, 0.2, { ImageTransparency = 0.3 })
+				Tween(TabText, 0.2, { TextTransparency = 0.3 })
+			end
 		end)
 		
 		TabButton.MouseLeave:Connect(function()
 			if library.currentTab and library.currentTab[1] ~= TabButton then
-				Tween(TabButton, 0.2, { BackgroundTransparency = 0.5 })
-				Tween(TabIcon, 0.2, { ImageTransparency = 0.5, ImageColor3 = Theme.TextSecondary })
-				Tween(TabText, 0.2, { TextTransparency = 0.5, TextColor3 = Theme.TextSecondary })
+				Tween(TabButton, 0.2, { BackgroundTransparency = 0.4 })
+				Tween(TabIcon, 0.2, { ImageTransparency = 0.5 })
+				Tween(TabText, 0.2, { TextTransparency = 0.5 })
 			end
 		end)
 		
-		local tab = {}
-		tab.button = TabButton
-		tab.page = TabPage
-		tab.sections = {}
-		
-		table.insert(library.tabs, tab)
+		-- 存储标签数据
+		local tabData = {
+			button = TabButton,
+			page = TabPage,
+			name = tabName:lower(),
+			fullName = tabName
+		}
+		table.insert(allTabs, tabData)
+		tabSearchData[tabName:lower()] = tabData
 		
 		if library.currentTab == nil then
-			SwitchTab({TabButton, TabPage})
+			Highlight.Position = UDim2.new(0, 0, 0, 135)
+			Highlight.Size = UDim2.new(1, 0, 0, 40)
+			SwitchTab({TabButton, TabPage}, true)
 		end
+		
+		-- Tab对象
+		local tab = {}
 		
 		-- ========== 创建区域(Section) ==========
 		function tab.Section(tab, sectionName, defaultOpen)
@@ -674,10 +641,11 @@ function library.new(library, name)
 			Section.BackgroundTransparency = 0.15
 			Section.BorderSizePixel = 0
 			Section.ClipsDescendants = true
-			Section.Size = UDim2.new(1, 0, 0, 60) -- 增大初始高度
+			Section.Size = UDim2.new(1, 0, 0, 50)
+			Section.ZIndex = 6
 			
 			local SectionCorner = Instance.new("UICorner")
-			SectionCorner.CornerRadius = Theme.Radius.Large -- 更大的圆角
+			SectionCorner.CornerRadius = Theme.Radius.Medium
 			SectionCorner.Parent = Section
 			
 			local SectionStroke = Instance.new("UIStroke")
@@ -690,50 +658,53 @@ function library.new(library, name)
 			Header.Name = "Header"
 			Header.Parent = Section
 			Header.BackgroundTransparency = 1
-			Header.Size = UDim2.new(1, 0, 0, 60) -- 增大高度
+			Header.Size = UDim2.new(1, 0, 0, 50)
+			Header.ZIndex = 7
 			
 			local SectionTitle = Instance.new("TextLabel")
 			SectionTitle.Name = "SectionTitle"
 			SectionTitle.Parent = Header
 			SectionTitle.BackgroundTransparency = 1
-			SectionTitle.Position = UDim2.new(0, 20, 0, 0) -- 调整位置
-			SectionTitle.Size = UDim2.new(1, -70, 1, 0)
+			SectionTitle.Position = UDim2.new(0, 15, 0, 0)
+			SectionTitle.Size = UDim2.new(1, -60, 1, 0)
 			SectionTitle.Font = Enum.Font.GothamBold
 			SectionTitle.Text = sectionName
 			SectionTitle.TextColor3 = Theme.TextPrimary
-			SectionTitle.TextSize = 18 -- 增大字体
+			SectionTitle.TextSize = 16
 			SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 			
 			local ToggleIcon = Instance.new("ImageLabel")
 			ToggleIcon.Name = "ToggleIcon"
 			ToggleIcon.Parent = Header
 			ToggleIcon.BackgroundTransparency = 1
-			ToggleIcon.Position = UDim2.new(1, -40, 0, 20) -- 调整位置
+			ToggleIcon.Position = UDim2.new(1, -35, 0, 15)
 			ToggleIcon.Size = UDim2.new(0, 20, 0, 20)
 			ToggleIcon.Image = "rbxassetid://6031302934"
 			ToggleIcon.ImageColor3 = Theme.TextSecondary
+			ToggleIcon.ZIndex = 7
 			
 			local Content = Instance.new("Frame")
 			Content.Name = "Content"
 			Content.Parent = Section
 			Content.BackgroundTransparency = 1
-			Content.Position = UDim2.new(0, 0, 0, 60)
+			Content.Position = UDim2.new(0, 0, 0, 50)
 			Content.Size = UDim2.new(1, 0, 0, 0)
+			Content.ZIndex = 6
 			
 			local ContentLayout = Instance.new("UIListLayout")
 			ContentLayout.Name = "ContentLayout"
 			ContentLayout.Parent = Content
 			ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-			ContentLayout.Padding = UDim.new(0, 12) -- 增大间距
+			ContentLayout.Padding = UDim.new(0, 10)
 			
 			local isOpen = defaultOpen
 			
 			local function updateSize()
 				if isOpen then
-					Section.Size = UDim2.new(1, 0, 0, 60 + ContentLayout.AbsoluteContentSize.Y + 20)
+					Section.Size = UDim2.new(1, 0, 0, 50 + ContentLayout.AbsoluteContentSize.Y + 15)
 					Tween(ToggleIcon, 0.3, { Rotation = 0 })
 				else
-					Section.Size = UDim2.new(1, 0, 0, 60)
+					Section.Size = UDim2.new(1, 0, 0, 50)
 					Tween(ToggleIcon, 0.3, { Rotation = -90 })
 				end
 			end
@@ -743,7 +714,7 @@ function library.new(library, name)
 				   input.UserInputType == Enum.UserInputType.Touch then
 					isOpen = not isOpen
 					updateSize()
-					CreateRipple(Header, Theme.Primary)
+					CreateRipple(Header, Theme.Primary, 1)
 				end
 			end)
 			
@@ -751,13 +722,8 @@ function library.new(library, name)
 			updateSize()
 			
 			local section = {}
-			section.Section = Section
-			section.Content = Content
-			section.SectionTitle = SectionTitle
 			
-			table.insert(tab.sections, section)
-			
-			-- ========== 创建按钮 ==========
+			-- ========== 创建按钮（优化版）==========
 			function section.Button(section, text, callback)
 				callback = callback or function() end
 				
@@ -767,15 +733,16 @@ function library.new(library, name)
 				Button.BackgroundColor3 = Theme.SurfaceElevated
 				Button.BackgroundTransparency = 0.25
 				Button.BorderSizePixel = 0
-				Button.Size = UDim2.new(1, -25, 0, 50) -- 增大高度
-				Button.Position = UDim2.new(0, 12, 0, 0)
+				Button.Size = UDim2.new(1, -20, 0, 45)
+				Button.Position = UDim2.new(0, 10, 0, 0)
 				Button.AutoButtonColor = false
 				Button.Font = Enum.Font.GothamSemibold
 				Button.Text = "   " .. text
 				Button.TextColor3 = Theme.TextPrimary
-				Button.TextSize = 16 -- 增大字体
+				Button.TextSize = 15
 				Button.TextXAlignment = Enum.TextXAlignment.Left
 				Button.ClipsDescendants = true
+				Button.ZIndex = 7
 				
 				local ButtonCorner = Instance.new("UICorner")
 				ButtonCorner.CornerRadius = Theme.Radius.Medium
@@ -788,28 +755,20 @@ function library.new(library, name)
 				ButtonStroke.Parent = Button
 				
 				Button.MouseEnter:Connect(function()
-					Tween(Button, 0.2, { 
-						BackgroundTransparency = 0.1, 
-						Size = UDim2.new(1, -20, 0, 50),
-						Position = UDim2.new(0, 15, 0, 0)
-					})
+					Tween(Button, 0.2, { BackgroundTransparency = 0.1, Size = UDim2.new(1, -15, 0, 45) })
 					Tween(ButtonStroke, 0.2, { Thickness = 1 })
 				end)
 				
 				Button.MouseLeave:Connect(function()
-					Tween(Button, 0.2, { 
-						BackgroundTransparency = 0.25, 
-						Size = UDim2.new(1, -25, 0, 50),
-						Position = UDim2.new(0, 12, 0, 0)
-					})
+					Tween(Button, 0.2, { BackgroundTransparency = 0.25, Size = UDim2.new(1, -20, 0, 45) })
 					Tween(ButtonStroke, 0.2, { Thickness = 0 })
 				end)
 				
 				Button.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or
 					   input.UserInputType == Enum.UserInputType.Touch then
-						Tween(Button, 0.1, { Size = UDim2.new(1, -30, 0, 50) })
-						CreateRipple(Button, Theme.Primary)
+						Tween(Button, 0.1, { Size = UDim2.new(1, -25, 0, 45) })
+						CreateRipple(Button, Theme.Primary, 0.8)
 						spawn(callback)
 					end
 				end)
@@ -817,12 +776,12 @@ function library.new(library, name)
 				Button.InputEnded:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or
 					   input.UserInputType == Enum.UserInputType.Touch then
-						Tween(Button, 0.1, { Size = UDim2.new(1, -25, 0, 50) })
+						Tween(Button, 0.1, { Size = UDim2.new(1, -20, 0, 45) })
 					end
 				end)
 			end
 			
-			-- ========== 创建开关（改进版）==========
+			-- ========== 创建开关（增强版）==========
 			function section.Toggle(section, text, flag, default, callback)
 				callback = callback or function() end
 				default = default or false
@@ -834,8 +793,9 @@ function library.new(library, name)
 				Toggle.BackgroundColor3 = Theme.SurfaceElevated
 				Toggle.BackgroundTransparency = 0.25
 				Toggle.BorderSizePixel = 0
-				Toggle.Size = UDim2.new(1, -25, 0, 50) -- 增大高度
-				Toggle.Position = UDim2.new(0, 12, 0, 0)
+				Toggle.Size = UDim2.new(1, -20, 0, 45)
+				Toggle.Position = UDim2.new(0, 10, 0, 0)
+				Toggle.ZIndex = 7
 				
 				local ToggleCorner = Instance.new("UICorner")
 				ToggleCorner.CornerRadius = Theme.Radius.Medium
@@ -845,12 +805,12 @@ function library.new(library, name)
 				ToggleLabel.Name = "ToggleLabel"
 				ToggleLabel.Parent = Toggle
 				ToggleLabel.BackgroundTransparency = 1
-				ToggleLabel.Position = UDim2.new(0, 20, 0, 0) -- 调整位置
-				ToggleLabel.Size = UDim2.new(1, -80, 1, 0)
+				ToggleLabel.Position = UDim2.new(0, 15, 0, 0)
+				ToggleLabel.Size = UDim2.new(1, -70, 1, 0)
 				ToggleLabel.Font = Enum.Font.GothamSemibold
 				ToggleLabel.Text = text
 				ToggleLabel.TextColor3 = Theme.TextPrimary
-				ToggleLabel.TextSize = 16 -- 增大字体
+				ToggleLabel.TextSize = 15
 				ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
 				
 				local Track = Instance.new("Frame")
@@ -858,8 +818,9 @@ function library.new(library, name)
 				Track.Parent = Toggle
 				Track.BackgroundColor3 = Theme.Surface
 				Track.BorderSizePixel = 0
-				Track.Position = UDim2.new(1, -60, 0.5, -12)
-				Track.Size = UDim2.new(0, 48, 0, 24) -- 增大轨道
+				Track.Position = UDim2.new(1, -50, 0.5, -10)
+				Track.Size = UDim2.new(0, 40, 0, 20)
+				Track.ZIndex = 7
 				
 				local TrackCorner = Instance.new("UICorner")
 				TrackCorner.CornerRadius = UDim.new(1, 0)
@@ -870,15 +831,16 @@ function library.new(library, name)
 				Thumb.Parent = Track
 				Thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				Thumb.BorderSizePixel = 0
-				Thumb.Position = UDim2.new(0, 2, 0.5, -10)
-				Thumb.Size = UDim2.new(0, 20, 0, 20) -- 增大滑块
+				Thumb.Position = UDim2.new(0, 2, 0.5, -8)
+				Thumb.Size = UDim2.new(0, 16, 0, 16)
+				Thumb.ZIndex = 8
 				
 				local ThumbCorner = Instance.new("UICorner")
 				ThumbCorner.CornerRadius = UDim.new(1, 0)
 				ThumbCorner.Parent = Thumb
 				
 				Toggle.MouseEnter:Connect(function()
-					Tween(Toggle, 0.2, { BackgroundTransparency = 0.15 })
+					Tween(Toggle, 0.2, { BackgroundTransparency = 0.1 })
 				end)
 				
 				Toggle.MouseLeave:Connect(function()
@@ -894,7 +856,8 @@ function library.new(library, name)
 					
 					library.flags[flag] = state
 					Tween(Thumb, 0.3, {
-						Position = UDim2.new(state and 1 or 0, state and -22 or 2, 0.5, -10)
+						Position = UDim2.new(state and 1 or 0, state and -18 or 2, 0.5, -8),
+						BackgroundColor3 = state and Theme.Success or Color3.fromRGB(255, 255, 255)
 					}, "Quad", "Out")
 					Tween(Track, 0.3, {
 						BackgroundColor3 = state and Theme.Success or Theme.Surface
@@ -906,7 +869,7 @@ function library.new(library, name)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or
 					   input.UserInputType == Enum.UserInputType.Touch then
 						funcs:SetState()
-						CreateRipple(Toggle, Theme.Primary)
+						CreateRipple(Toggle, Theme.Primary, 0.8)
 					end
 				end)
 				
@@ -914,7 +877,7 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			-- ========== 创建滑块（向后兼容）==========
+			-- ========== 创建滑块（优化版）==========
 			function section.Slider(section, text, flag, default, min, max, precise, callback)
 				-- 向后兼容: 支持旧版调用方式
 				callback = callback or function() end
@@ -934,8 +897,9 @@ function library.new(library, name)
 				Slider.BackgroundColor3 = Theme.SurfaceElevated
 				Slider.BackgroundTransparency = 0.25
 				Slider.BorderSizePixel = 0
-				Slider.Size = UDim2.new(1, -25, 0, 75) -- 增大高度
-				Slider.Position = UDim2.new(0, 12, 0, 0)
+				Slider.Size = UDim2.new(1, -20, 0, 70)
+				Slider.Position = UDim2.new(0, 10, 0, 0)
+				Slider.ZIndex = 7
 				
 				local SliderCorner = Instance.new("UICorner")
 				SliderCorner.CornerRadius = Theme.Radius.Medium
@@ -945,12 +909,12 @@ function library.new(library, name)
 				SliderLabel.Name = "SliderLabel"
 				SliderLabel.Parent = Slider
 				SliderLabel.BackgroundTransparency = 1
-				SliderLabel.Position = UDim2.new(0, 20, 0, 12) -- 调整位置
-				SliderLabel.Size = UDim2.new(1, -40, 0, 25)
+				SliderLabel.Position = UDim2.new(0, 15, 0, 10)
+				SliderLabel.Size = UDim2.new(1, -90, 0, 20)
 				SliderLabel.Font = Enum.Font.GothamSemibold
 				SliderLabel.Text = text
 				SliderLabel.TextColor3 = Theme.TextPrimary
-				SliderLabel.TextSize = 16 -- 增大字体
+				SliderLabel.TextSize = 15
 				SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
 				
 				local ValueLabel = Instance.new("TextLabel")
@@ -959,12 +923,13 @@ function library.new(library, name)
 				ValueLabel.BackgroundColor3 = Theme.Surface
 				ValueLabel.BackgroundTransparency = 0.4
 				ValueLabel.BorderSizePixel = 0
-				ValueLabel.Position = UDim2.new(1, -70, 0, 12) -- 调整位置
-				ValueLabel.Size = UDim2.new(0, 60, 0, 25) -- 增大尺寸
+				ValueLabel.Position = UDim2.new(1, -70, 0, 10)
+				ValueLabel.Size = UDim2.new(0, 60, 0, 20)
 				ValueLabel.Font = Enum.Font.GothamBold
 				ValueLabel.Text = tostring(default)
 				ValueLabel.TextColor3 = Theme.TextPrimary
-				ValueLabel.TextSize = 14 -- 增大字体
+				ValueLabel.TextSize = 13
+				ValueLabel.ZIndex = 8
 				
 				local ValueCorner = Instance.new("UICorner")
 				ValueCorner.CornerRadius = Theme.Radius.Small
@@ -975,8 +940,9 @@ function library.new(library, name)
 				Track.Parent = Slider
 				Track.BackgroundColor3 = Theme.Surface
 				Track.BorderSizePixel = 0
-				Track.Position = UDim2.new(0, 20, 0, 45) -- 调整位置
-				Track.Size = UDim2.new(1, -40, 0, 8) -- 增大轨道
+				Track.Position = UDim2.new(0, 15, 0, 45)
+				Track.Size = UDim2.new(1, -30, 0, 6)
+				Track.ZIndex = 7
 				
 				local TrackCorner = Instance.new("UICorner")
 				TrackCorner.CornerRadius = UDim.new(1, 0)
@@ -988,6 +954,7 @@ function library.new(library, name)
 				Fill.BackgroundColor3 = Theme.Primary
 				Fill.BorderSizePixel = 0
 				Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+				Fill.ZIndex = 7
 				
 				local FillCorner = Instance.new("UICorner")
 				FillCorner.CornerRadius = UDim.new(1, 0)
@@ -998,12 +965,18 @@ function library.new(library, name)
 				Thumb.Parent = Track
 				Thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				Thumb.BorderSizePixel = 0
-				Thumb.Position = UDim2.new((default - min) / (max - min), -10, 0.5, -10)
-				Thumb.Size = UDim2.new(0, 20, 0, 20) -- 增大滑块
+				Thumb.Position = UDim2.new((default - min) / (max - min), -8, 0.5, -8)
+				Thumb.Size = UDim2.new(0, 16, 0, 16)
+				Thumb.ZIndex = 8
 				
 				local ThumbCorner = Instance.new("UICorner")
 				ThumbCorner.CornerRadius = UDim.new(1, 0)
 				ThumbCorner.Parent = Thumb
+				
+				local ThumbStroke = Instance.new("UIStroke")
+				ThumbStroke.Color = Theme.Primary
+				ThumbStroke.Thickness = 2
+				ThumbStroke.Parent = Thumb
 				
 				local funcs = {}
 				local dragging = false
@@ -1017,7 +990,7 @@ function library.new(library, name)
 					
 					local percent = (value - min) / (max - min)
 					Tween(Fill, 0.1, { Size = UDim2.new(percent, 0, 1, 0) })
-					Tween(Thumb, 0.1, { Position = UDim2.new(percent, -10, 0.5, -10) })
+					Tween(Thumb, 0.1, { Position = UDim2.new(percent, -8, 0.5, -8) })
 					
 					callback(value)
 				end
@@ -1050,18 +1023,11 @@ function library.new(library, name)
 					end
 				end)
 				
-				Track.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						updateValue(input)
-					end
-				end)
-				
 				funcs:SetValue(default)
 				return funcs
 			end
 			
-			-- ========== 创建文本框（向后兼容）==========
-			-- 这是关键修复：同时支持 Textbox 和 TextBox 调用
+			-- ========== 创建文本框（关键修复）==========
 			function section.Textbox(section, text, flag, default, placeholder, callback)
 				-- 向后兼容参数处理
 				callback = callback or function() end
@@ -1079,8 +1045,9 @@ function library.new(library, name)
 				Textbox.BackgroundColor3 = Theme.SurfaceElevated
 				Textbox.BackgroundTransparency = 0.25
 				Textbox.BorderSizePixel = 0
-				Textbox.Size = UDim2.new(1, -25, 0, 50) -- 增大高度
-				Textbox.Position = UDim2.new(0, 12, 0, 0)
+				Textbox.Size = UDim2.new(1, -20, 0, 45)
+				Textbox.Position = UDim2.new(0, 10, 0, 0)
+				Textbox.ZIndex = 7
 				
 				local TextboxCorner = Instance.new("UICorner")
 				TextboxCorner.CornerRadius = Theme.Radius.Medium
@@ -1090,22 +1057,22 @@ function library.new(library, name)
 				Label.Name = "Label"
 				Label.Parent = Textbox
 				Label.BackgroundTransparency = 1
-				Label.Position = UDim2.new(0, 20, 0, 0) -- 调整位置
-				Label.Size = UDim2.new(0.4, -20, 1, 0)
+				Label.Position = UDim2.new(0, 15, 0, 0)
+				Label.Size = UDim2.new(0.35, -15, 1, 0)
 				Label.Font = Enum.Font.GothamSemibold
 				Label.Text = text
 				Label.TextColor3 = Theme.TextPrimary
-				Label.TextSize = 16 -- 增大字体
+				Label.TextSize = 15
 				Label.TextXAlignment = Enum.TextXAlignment.Left
 				
 				local InputBox = Instance.new("TextBox")
 				InputBox.Name = "InputBox"
 				InputBox.Parent = Textbox
 				InputBox.BackgroundColor3 = Theme.Surface
-				InputBox.BackgroundTransparency = 0.5
+				InputBox.BackgroundTransparency = 0.4
 				InputBox.BorderSizePixel = 0
-				InputBox.Position = UDim2.new(0.4, 10, 0.5, -14) -- 调整位置
-				InputBox.Size = UDim2.new(0.6, -20, 0, 28) -- 增大高度
+				InputBox.Position = UDim2.new(0.35, 5, 0.5, -13)
+				InputBox.Size = UDim2.new(0.65, -20, 0, 26)
 				InputBox.Font = Enum.Font.Gotham
 				InputBox.Text = default
 				InputBox.TextColor3 = Theme.TextPrimary
@@ -1113,13 +1080,14 @@ function library.new(library, name)
 				InputBox.PlaceholderColor3 = Theme.TextHint
 				InputBox.TextSize = 14
 				InputBox.ClearTextOnFocus = false
+				InputBox.ZIndex = 8
 				
 				local InputCorner = Instance.new("UICorner")
 				InputCorner.CornerRadius = Theme.Radius.Small
 				InputCorner.Parent = InputBox
 				
 				Textbox.MouseEnter:Connect(function()
-					Tween(Textbox, 0.2, { BackgroundTransparency = 0.15 })
+					Tween(Textbox, 0.2, { BackgroundTransparency = 0.1 })
 				end)
 				
 				Textbox.MouseLeave:Connect(function()
@@ -1127,13 +1095,11 @@ function library.new(library, name)
 				end)
 				
 				InputBox.Focused:Connect(function()
-					Tween(InputBox, 0.2, { BackgroundTransparency = 0.3 })
-					Tween(SearchBarStroke, 0.2, { Transparency = 0.3 })
+					Tween(InputBox, 0.2, { BackgroundTransparency = 0.2 })
 				end)
 				
 				InputBox.FocusLost:Connect(function(enterPressed)
-					Tween(InputBox, 0.2, { BackgroundTransparency = 0.5 })
-					Tween(SearchBarStroke, 0.2, { Transparency = 0.7 })
+					Tween(InputBox, 0.2, { BackgroundTransparency = 0.4 })
 					library.flags[flag] = InputBox.Text
 					callback(InputBox.Text, enterPressed)
 				end)
@@ -1147,7 +1113,7 @@ function library.new(library, name)
 			section.textbox = section.Textbox
 			section.TextBox = section.Textbox
 			
-			-- ========== 创建下拉菜单 ==========
+			-- ========== 创建下拉菜单（增强版）==========
 			function section.Dropdown(section, text, flag, options, callback)
 				callback = callback or function() end
 				options = options or {}
@@ -1160,8 +1126,9 @@ function library.new(library, name)
 				Dropdown.BackgroundTransparency = 0.25
 				Dropdown.BorderSizePixel = 0
 				Dropdown.ClipsDescendants = true
-				Dropdown.Size = UDim2.new(1, -25, 0, 50) -- 增大高度
-				Dropdown.Position = UDim2.new(0, 12, 0, 0)
+				Dropdown.Size = UDim2.new(1, -20, 0, 45)
+				Dropdown.Position = UDim2.new(0, 10, 0, 0)
+				Dropdown.ZIndex = 10
 				
 				local DropdownCorner = Instance.new("UICorner")
 				DropdownCorner.CornerRadius = Theme.Radius.Medium
@@ -1171,37 +1138,39 @@ function library.new(library, name)
 				Header.Name = "Header"
 				Header.Parent = Dropdown
 				Header.BackgroundTransparency = 1
-				Header.Size = UDim2.new(1, 0, 0, 50)
+				Header.Size = UDim2.new(1, 0, 0, 45)
+				Header.ZIndex = 10
 				
 				local Label = Instance.new("TextLabel")
 				Label.Name = "Label"
 				Label.Parent = Header
 				Label.BackgroundTransparency = 1
-				Label.Position = UDim2.new(0, 20, 0, 0) -- 调整位置
-				Label.Size = UDim2.new(1, -80, 1, 0)
+				Label.Position = UDim2.new(0, 15, 0, 0)
+				Label.Size = UDim2.new(1, -60, 1, 0)
 				Label.Font = Enum.Font.GothamSemibold
 				Label.Text = text
 				Label.TextColor3 = Theme.TextPrimary
-				Label.TextSize = 16 -- 增大字体
+				Label.TextSize = 15
 				Label.TextXAlignment = Enum.TextXAlignment.Left
 				
 				local Arrow = Instance.new("ImageLabel")
 				Arrow.Name = "Arrow"
 				Arrow.Parent = Header
 				Arrow.BackgroundTransparency = 1
-				Arrow.Position = UDim2.new(1, -40, 0, 15) -- 调整位置
-				Arrow.Size = UDim2.new(0, 20, 0, 20)
+				Arrow.Position = UDim2.new(1, -35, 0, 13)
+				Arrow.Size = UDim2.new(0, 18, 0, 18)
 				Arrow.Image = "rbxassetid://6031302934"
 				Arrow.ImageColor3 = Theme.TextSecondary
+				Arrow.ZIndex = 10
 				
 				local SearchBox = Instance.new("TextBox")
 				SearchBox.Name = "SearchBox"
 				SearchBox.Parent = Dropdown
 				SearchBox.BackgroundColor3 = Theme.Surface
-				SearchBox.BackgroundTransparency = 0.5
+				SearchBox.BackgroundTransparency = 0.4
 				SearchBox.BorderSizePixel = 0
-				SearchBox.Position = UDim2.new(0, 15, 0, 55) -- 调整位置
-				SearchBox.Size = UDim2.new(1, -30, 0, 35) -- 增大高度
+				SearchBox.Position = UDim2.new(0, 15, 0, 50)
+				SearchBox.Size = UDim2.new(1, -30, 0, 30)
 				SearchBox.Font = Enum.Font.Gotham
 				SearchBox.Text = ""
 				SearchBox.PlaceholderText = "搜索选项..."
@@ -1209,6 +1178,8 @@ function library.new(library, name)
 				SearchBox.TextColor3 = Theme.TextPrimary
 				SearchBox.TextSize = 14
 				SearchBox.Visible = false
+				SearchBox.ZIndex = 10
+				SearchBox.ClearTextOnFocus = false
 				
 				local SearchCorner = Instance.new("UICorner")
 				SearchCorner.CornerRadius = Theme.Radius.Small
@@ -1219,14 +1190,14 @@ function library.new(library, name)
 				OptionsList.Parent = Dropdown
 				OptionsList.BackgroundTransparency = 1
 				OptionsList.BorderSizePixel = 0
-				OptionsList.Position = UDim2.new(0, 15, 0, 95) -- 调整位置
-				OptionsList.Size = UDim2.new(1, -30, 1, -100)
-				OptionsList.ScrollBarThickness = 2
+				OptionsList.Position = UDim2.new(0, 15, 0, 85)
+				OptionsList.Size = UDim2.new(1, -30, 1, -90)
+				OptionsList.ScrollBarThickness = 3
 				OptionsList.ScrollBarImageColor3 = Theme.Primary
 				OptionsList.ScrollBarImageTransparency = 0.7
 				OptionsList.Visible = false
 				OptionsList.CanvasSize = UDim2.new(0, 0, 0, 0)
-				OptionsList.ScrollBarInset = Enum.ScrollBarInset.Always
+				OptionsList.ZIndex = 10
 				
 				local OptionsLayout = Instance.new("UIListLayout")
 				OptionsLayout.Parent = OptionsList
@@ -1247,7 +1218,7 @@ function library.new(library, name)
 					Option.BackgroundColor3 = Theme.Surface
 					Option.BackgroundTransparency = 0.5
 					Option.BorderSizePixel = 0
-					Option.Size = UDim2.new(1, 0, 0, 40) -- 增大高度
+					Option.Size = UDim2.new(1, 0, 0, 35)
 					Option.AutoButtonColor = false
 					Option.Font = Enum.Font.Gotham
 					Option.Text = option
@@ -1255,6 +1226,7 @@ function library.new(library, name)
 					Option.TextSize = 14
 					Option.TextXAlignment = Enum.TextXAlignment.Left
 					Option.ClipsDescendants = true
+					Option.ZIndex = 10
 					
 					local OptionCorner = Instance.new("UICorner")
 					OptionCorner.CornerRadius = Theme.Radius.Small
@@ -1262,10 +1234,10 @@ function library.new(library, name)
 					
 					local OptionPadding = Instance.new("UIPadding")
 					OptionPadding.Parent = Option
-					OptionPadding.PaddingLeft = UDim.new(0, 15) -- 增加左边距
+					OptionPadding.PaddingLeft = UDim.new(0, 10)
 					
 					Option.MouseEnter:Connect(function()
-						Tween(Option, 0.2, { BackgroundTransparency = 0.3 })
+						Tween(Option, 0.2, { BackgroundTransparency = 0.2 })
 					end)
 					
 					Option.MouseLeave:Connect(function()
@@ -1275,9 +1247,9 @@ function library.new(library, name)
 					Option.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or
 						   input.UserInputType == Enum.UserInputType.Touch then
-							CreateRipple(Option, Theme.Primary)
+							CreateRipple(Option, Theme.Primary, 0.8)
 							isOpen = false
-							Tween(Dropdown, 0.3, { Size = UDim2.new(1, -25, 0, 50) })
+							Tween(Dropdown, 0.3, { Size = UDim2.new(1, -20, 0, 45) })
 							Tween(Arrow, 0.3, { Rotation = 0 })
 							wait(0.1)
 							SearchBox.Visible = false
@@ -1310,7 +1282,7 @@ function library.new(library, name)
 				
 				function funcs:Open()
 					isOpen = true
-					Tween(Dropdown, 0.3, { Size = UDim2.new(1, -25, 0, 220) }) -- 调整展开高度
+					Tween(Dropdown, 0.3, { Size = UDim2.new(1, -20, 0, 200) })
 					Tween(Arrow, 0.3, { Rotation = 90 })
 					wait(0.1)
 					SearchBox.Visible = true
@@ -1319,7 +1291,7 @@ function library.new(library, name)
 				
 				function funcs:Close()
 					isOpen = false
-					Tween(Dropdown, 0.3, { Size = UDim2.new(1, -25, 0, 50) })
+					Tween(Dropdown, 0.3, { Size = UDim2.new(1, -20, 0, 45) })
 					Tween(Arrow, 0.3, { Rotation = 0 })
 					SearchBox.Visible = false
 					OptionsList.Visible = false
@@ -1352,14 +1324,15 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			-- ========== 创建标签 ==========
+			-- ========== 创建标签（优化版）==========
 			function section.Label(section, text)
 				local Label = Instance.new("Frame")
 				Label.Name = "Label"
 				Label.Parent = Content
 				Label.BackgroundTransparency = 1
-				Label.Size = UDim2.new(1, -25, 0, 35) -- 增大高度
-				Label.Position = UDim2.new(0, 12, 0, 0)
+				Label.Size = UDim2.new(1, -20, 0, 30)
+				Label.Position = UDim2.new(0, 10, 0, 0)
+				Label.ZIndex = 7
 				
 				local TextLabel = Instance.new("TextLabel")
 				TextLabel.Name = "TextLabel"
@@ -1368,14 +1341,14 @@ function library.new(library, name)
 				TextLabel.Size = UDim2.new(1, 0, 1, 0)
 				TextLabel.Font = Enum.Font.Gotham
 				TextLabel.Text = text
-				TextLabel.TextColor3 = Theme.TextSecondary
+				TextLabel.TextColor3 = Theme.TextHint
 				TextLabel.TextSize = 13
 				TextLabel.TextXAlignment = Enum.TextXAlignment.Center
 				
 				return TextLabel
 			end
 			
-			-- ========== 创建按键绑定 ==========
+			-- ========== 创建按键绑定（优化版）==========
 			function section.Keybind(section, text, default, callback)
 				callback = callback or function() end
 				default = default or "F"
@@ -1419,8 +1392,9 @@ function library.new(library, name)
 				Keybind.BackgroundColor3 = Theme.SurfaceElevated
 				Keybind.BackgroundTransparency = 0.25
 				Keybind.BorderSizePixel = 0
-				Keybind.Size = UDim2.new(1, -25, 0, 50) -- 增大高度
-				Keybind.Position = UDim2.new(0, 12, 0, 0)
+				Keybind.Size = UDim2.new(1, -20, 0, 45)
+				Keybind.Position = UDim2.new(0, 10, 0, 0)
+				Keybind.ZIndex = 7
 				
 				local KeybindCorner = Instance.new("UICorner")
 				KeybindCorner.CornerRadius = Theme.Radius.Medium
@@ -1430,12 +1404,12 @@ function library.new(library, name)
 				Label.Name = "Label"
 				Label.Parent = Keybind
 				Label.BackgroundTransparency = 1
-				Label.Position = UDim2.new(0, 20, 0, 0) -- 调整位置
-				Label.Size = UDim2.new(1, -80, 1, 0)
+				Label.Position = UDim2.new(0, 15, 0, 0)
+				Label.Size = UDim2.new(1, -70, 1, 0)
 				Label.Font = Enum.Font.GothamSemibold
 				Label.Text = text
 				Label.TextColor3 = Theme.TextPrimary
-				Label.TextSize = 16 -- 增大字体
+				Label.TextSize = 15
 				Label.TextXAlignment = Enum.TextXAlignment.Left
 				
 				local KeyButton = Instance.new("TextButton")
@@ -1444,12 +1418,13 @@ function library.new(library, name)
 				KeyButton.BackgroundColor3 = Theme.Surface
 				KeyButton.BackgroundTransparency = 0.4
 				KeyButton.BorderSizePixel = 0
-				KeyButton.Position = UDim2.new(1, -70, 0.5, -15) -- 调整位置
-				KeyButton.Size = UDim2.new(0, 60, 0, 30) -- 增大尺寸
+				KeyButton.Position = UDim2.new(1, -55, 0.5, -12)
+				KeyButton.Size = UDim2.new(0, 45, 0, 24)
 				KeyButton.Font = Enum.Font.GothamBold
 				KeyButton.Text = keyName
 				KeyButton.TextColor3 = Theme.TextPrimary
-				KeyButton.TextSize = 14 -- 增大字体
+				KeyButton.TextSize = 13
+				KeyButton.ZIndex = 8
 				
 				local KeyCorner = Instance.new("UICorner")
 				KeyCorner.CornerRadius = Theme.Radius.Small
@@ -1466,10 +1441,10 @@ function library.new(library, name)
 					KeyButton.Text = "..."
 					Tween(KeyButton, 0.2, { BackgroundColor3 = Theme.Primary })
 					
+					wait(0.1)
+					
 					local input = services.UserInputService.InputEnded:Wait()
 					local newKey = input.KeyCode
-					
-					wait(0.1)
 					
 					if newKey and not bannedKeys[newKey.Name] then
 						currentKey = newKey
@@ -1483,7 +1458,7 @@ function library.new(library, name)
 				end)
 				
 				Keybind.MouseEnter:Connect(function()
-					Tween(Keybind, 0.2, { BackgroundTransparency = 0.15 })
+					Tween(Keybind, 0.2, { BackgroundTransparency = 0.1 })
 				end)
 				
 				Keybind.MouseLeave:Connect(function()
@@ -1501,6 +1476,55 @@ function library.new(library, name)
 		
 		return tab
 	end
+	
+	-- ========== 智能搜索系统 ==========
+	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local searchText = SearchBox.Text:lower()
+		local hasResults = false
+		
+		-- 重置所有标签页可见性
+		for _, tabData in ipairs(allTabs) do
+			tabData.button.Visible = true
+		end
+		
+		if searchText ~= "" then
+			for _, tabData in ipairs(allTabs) do
+				local isMatch = tabData.name:find(searchText) ~= nil
+				tabData.button.Visible = isMatch
+				if isMatch then
+					hasResults = true
+				end
+			end
+			
+			-- 高亮第一个匹配结果
+			if hasResults then
+				for _, tabData in ipairs(allTabs) do
+					if tabData.button.Visible then
+						SwitchTab({tabData.button, tabData.page})
+						break
+					end
+				end
+			end
+		else
+			hasResults = true
+			-- 恢复标签页布局
+			TabListLayout:ApplyLayout()
+		end
+		
+		-- 更新CanvasSize
+		TabContainer.CanvasSize = UDim2.new(0, 0, 0, TabListLayout.AbsoluteContentSize.Y + 20)
+	end)
+	
+	-- 确保搜索框获得焦点时的效果
+	SearchBox.Focused:Connect(function()
+		Tween(SearchContainer, 0.2, { BackgroundColor3 = Theme.SurfaceElevated })
+		Tween(SearchIcon, 0.2, { ImageColor3 = Theme.Primary })
+	end)
+	
+	SearchBox.FocusLost:Connect(function()
+		Tween(SearchContainer, 0.2, { BackgroundColor3 = Theme.SurfaceElevated })
+		Tween(SearchIcon, 0.2, { ImageColor3 = Theme.TextHint })
+	end)
 	
 	return window
 end
