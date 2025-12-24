@@ -6,54 +6,51 @@ local library = {}
 local toggled = false
 library.currentTab = nil
 library.flags = {}
+
+-- 配置保存系统
+local configPath = "BS脚本/UI配置.txt"
+
+-- 保存配置函数
+local function saveConfig(config)
+	local success, encoded = pcall(function()
+		return game:GetService("HttpService"):JSONEncode(config)
+	end)
+	if success then
+		if isfolder("BS脚本") then
+			if isfile(configPath) then
+				delfile(configPath)
+			end
+		else
+			makefolder("BS脚本")
+		end
+		writefile(configPath, encoded)
+	end
+end
+
+-- 加载配置函数
+local function loadConfig()
+	if isfile(configPath) then
+		local success, config = pcall(function()
+			return game:GetService("HttpService"):JSONDecode(readfile(configPath))
+		end)
+		if success then
+			return config
+		end
+	end
+	-- 默认配置
+	return {
+		autoFitScreen = false,
+		windowSize = {650, 400},
+		windowPosition = {0.5, 0.5}
+	}
+end
+
 local services = setmetatable({}, {
 	__index = function(t, k)
 		return game.GetService(game, k)
 	end,
 })
 local mouse = services.Players.LocalPlayer:GetMouse()
-
--- 配置管理
-local configured = {}
-configured.config = {
-	saveFile = "BS脚本/UI配置.txt"
-}
-
--- 创建配置文件夹
-local function ensureConfigFolder()
-	local folder = "BS脚本"
-	if not isfolder(folder) then
-		makefolder(folder)
-	end
-end
-
--- 加载配置
-local function loadConfig()
-	ensureConfigFolder()
-	if isfile(configured.config.saveFile) then
-		local success, configData = pcall(function()
-			return game:GetService("HttpService"):JSONDecode(readfile(configured.config.saveFile))
-		end)
-		if success and configData then
-			return configData
-		end
-	end
-	return {
-		colorInverted = false,
-		autoUIScale = false
-	}
-end
-
--- 保存配置
-local function saveConfig(configData)
-	ensureConfigFolder()
-	local success, json = pcall(function()
-		return game:GetService("HttpService"):JSONEncode(configData)
-	end)
-	if success then
-		writefile(configured.config.saveFile, json)
-	end
-end
 
 local Colors = {
 	Primary = Color3.fromRGB(15, 15, 15),
@@ -64,38 +61,6 @@ local Colors = {
 	White = Color3.fromRGB(255, 255, 255),
 	Transparent = 0.25,
 }
-
--- 颜色反转状态
-local colorInverted = false
-local autoUIScaleEnabled = false
-
--- 更新所有UI颜色的函数
-local function updateAllColors(parent)
-	for _, obj in pairs(parent:GetDescendants()) do
-		if obj:IsA("GuiObject") then
-			if obj.BackgroundColor3 == Colors.Primary then
-				obj.BackgroundColor3 = Colors.Primary
-			elseif obj.BackgroundColor3 == Colors.Secondary then
-				obj.BackgroundColor3 = Colors.Secondary
-			elseif obj.BackgroundColor3 == Colors.Accent then
-				obj.BackgroundColor3 = Colors.Accent
-			end
-			if obj:IsA("TextBox") or obj:IsA("TextLabel") or obj:IsA("TextButton") then
-				if obj.TextColor3 == Colors.Text then
-					obj.TextColor3 = Colors.Text
-				end
-				if obj.PlaceholderColor3 == Colors.Placeholder then
-					obj.PlaceholderColor3 = Colors.Placeholder
-				end
-			end
-			if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-				if obj.ImageColor3 == Colors.Text then
-					obj.ImageColor3 = Colors.Text
-				end
-			end
-		end
-	end
-end
 
 local function CreateGlassEffect(instance, transparency)
 	instance.BackgroundTransparency = transparency or Colors.Transparent
@@ -144,6 +109,21 @@ function Ripple(obj)
 		wait(0.3)
 		Ripple:Destroy()
 	end)
+end
+
+-- 自动适配屏幕函数
+local function autoFitUIScreen(mainFrame)
+	local viewportSize = services.Workspace.CurrentCamera.ViewportSize
+	
+	if viewportSize.X < 800 then
+		mainFrame.Size = UDim2.new(0, viewportSize.X - 100, 0, viewportSize.Y - 100)
+	elseif viewportSize.Y < 600 then
+		mainFrame.Size = UDim2.new(0, 550, 0, viewportSize.Y - 100)
+	else
+		mainFrame.Size = UDim2.new(0, 650, 0, 400)
+	end
+	
+	mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 end
 
 function drag(frame, hold)
@@ -241,47 +221,26 @@ function library.new(library, name, theme)
 	DropShadow.ScaleType = Enum.ScaleType.Slice
 	DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- 颜色反转按钮
-	local ColorInvertBtn = Instance.new("TextButton")
-	ColorInvertBtn.Name = "ColorInvertBtn"
-	ColorInvertBtn.Parent = Main
-	ColorInvertBtn.BackgroundColor3 = Colors.Secondary
-	ColorInvertBtn.BackgroundTransparency = Colors.Transparent
-	ColorInvertBtn.Position = UDim2.new(1, -95, 0, 10)
-	ColorInvertBtn.Size = UDim2.new(0, 25, 0, 25)
-	ColorInvertBtn.Font = Enum.Font.GothamBold
-	ColorInvertBtn.Text = "◐"
-	ColorInvertBtn.TextColor3 = Colors.Text
-	ColorInvertBtn.TextSize = 16
-	ColorInvertBtn.ZIndex = 10
+	-- 新增：自动适配屏幕按钮
+	local AutoFitBtn = Instance.new("ImageButton")
+	AutoFitBtn.Name = "AutoFitBtn"
+	AutoFitBtn.Parent = Main
+	AutoFitBtn.BackgroundColor3 = Colors.Secondary
+	AutoFitBtn.BackgroundTransparency = Colors.Transparent
+	AutoFitBtn.Position = UDim2.new(1, -65, 0, 10)
+	AutoFitBtn.Size = UDim2.new(0, 25, 0, 25)
+	AutoFitBtn.Image = "rbxassetid://3926305904"
+	AutoFitBtn.ImageRectOffset = Vector2.new(244, 164)
+	AutoFitBtn.ImageRectSize = Vector2.new(36, 36)
+	AutoFitBtn.ImageColor3 = Colors.Text
+	AutoFitBtn.ZIndex = 10
 	
-	local ColorInvertBtnC = Instance.new("UICorner")
-	ColorInvertBtnC.CornerRadius = UDim.new(0, 6)
-	ColorInvertBtnC.Parent = ColorInvertBtn
+	local AutoFitBtnC = Instance.new("UICorner")
+	AutoFitBtnC.CornerRadius = UDim.new(0, 6)
+	AutoFitBtnC.Parent = AutoFitBtn
 	
-	CreateGlassEffect(ColorInvertBtn)
+	CreateGlassEffect(AutoFitBtn)
 	
-	-- 自动UI按钮
-	local AutoUIScaleBtn = Instance.new("TextButton")
-	AutoUIScaleBtn.Name = "AutoUIScaleBtn"
-	AutoUIScaleBtn.Parent = Main
-	AutoUIScaleBtn.BackgroundColor3 = Colors.Secondary
-	AutoUIScaleBtn.BackgroundTransparency = Colors.Transparent
-	AutoUIScaleBtn.Position = UDim2.new(1, -65, 0, 10)
-	AutoUIScaleBtn.Size = UDim2.new(0, 25, 0, 25)
-	AutoUIScaleBtn.Font = Enum.Font.GothamBold
-	AutoUIScaleBtn.Text = "A"
-	AutoUIScaleBtn.TextColor3 = Colors.Text
-	AutoUIScaleBtn.TextSize = 14
-	AutoUIScaleBtn.ZIndex = 10
-	
-	local AutoUIScaleBtnC = Instance.new("UICorner")
-	AutoUIScaleBtnC.CornerRadius = UDim.new(0, 6)
-	AutoUIScaleBtnC.Parent = AutoUIScaleBtn
-	
-	CreateGlassEffect(AutoUIScaleBtn)
-	
-	-- 关闭按钮
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "CloseBtn"
 	CloseBtn.Parent = Main
@@ -303,75 +262,72 @@ function library.new(library, name, theme)
 		dogent:Destroy()
 	end)
 	
-	-- UIScale 用于自动适配
-	local uiScale = Instance.new("UIScale")
-	uiScale.Parent = Main
-	uiScale.Scale = 1
-	
 	-- 加载配置
-	local config = loadConfig()
+	local currentConfig = loadConfig()
+	local autoFitEnabled = currentConfig.autoFitScreen
 	
-	-- 颜色反转功能
-	local function toggleColorInvert()
-		colorInverted = not colorInverted
-		if colorInverted then
-			Colors.Primary = Color3.fromRGB(255, 255, 255)
-			Colors.Secondary = Color3.fromRGB(240, 240, 240)
-			Colors.Text = Color3.fromRGB(15, 15, 15)
-			ColorInvertBtn.Text = "◑"
-		else
-			Colors.Primary = Color3.fromRGB(15, 15, 15)
-			Colors.Secondary = Color3.fromRGB(30, 30, 30)
-			Colors.Text = Color3.fromRGB(240, 240, 240)
-			ColorInvertBtn.Text = "◐"
-		end
-		updateAllColors(Main)
-		-- 更新stroke颜色
-		MainStroke.Color = Colors.Secondary
-		-- 保存配置
-		config.colorInverted = colorInverted
-		saveConfig(config)
+	-- 如果开启了自动适配，立即应用
+	if autoFitEnabled then
+		autoFitUIScreen(Main)
 	end
 	
-	-- 自动UI适配功能
-	local function toggleAutoUIScale()
-		autoUIScaleEnabled = not autoUIScaleEnabled
-		if autoUIScaleEnabled then
-			AutoUIScaleBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-			-- 计算合适的缩放比例
-			local viewportSize = workspace.CurrentCamera.ViewportSize
-			local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080, 1)
-			uiScale.Scale = scale
-		else
-			AutoUIScaleBtn.BackgroundColor3 = Colors.Secondary
-			uiScale.Scale = 1
-		end
-		-- 保存配置
-		config.autoUIScale = autoUIScaleEnabled
-		saveConfig(config)
-	end
+	-- 创建UI状态值显示
+	local statusOverlay = Instance.new("TextLabel")
+	statusOverlay.Name = "StatusOverlay"
+	statusOverlay.Parent = Main
+	statusOverlay.BackgroundTransparency = 1
+	statusOverlay.Position = UDim2.new(0, 15, 0, 15)
+	statusOverlay.Size = UDim2.new(0, 200, 0, 20)
+	statusOverlay.Font = Enum.Font.Gotham
+	statusOverlay.Text = autoFitEnabled and "已启用自动适配" or ""
+	statusOverlay.TextColor3 = Colors.Accent
+	statusOverlay.TextSize = 12
+	statusOverlay.TextXAlignment = Enum.TextXAlignment.Left
+	statusOverlay.ZIndex = 5
 	
-	-- 绑定按钮事件
-	ColorInvertBtn.MouseButton1Click:Connect(function()
+	-- 自动适配按钮点击事件
+	AutoFitBtn.MouseButton1Click:Connect(function()
 		spawn(function()
-			Ripple(ColorInvertBtn)
+			Ripple(AutoFitBtn)
 		end)
-		toggleColorInvert()
+		
+		autoFitEnabled = not autoFitEnabled
+		
+		-- 应用适配
+		if autoFitEnabled then
+			autoFitUIScreen(Main)
+			-- 更新状态显示
+			Tween(AutoFitBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Accent })
+			Tween(AutoFitBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0 })
+			
+			-- 显示状态
+			statusOverlay.Text = "已启用自动适配"
+			Tween(statusOverlay, 0.3, "Sine", "Out", { TextTransparency = 0 })
+		else
+			-- 恢复默认大小
+			Main.Size = UDim2.new(0, 650, 0, 400)
+			Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+			
+			-- 更新状态
+			Tween(AutoFitBtn, 0.2, "Sine", "Out", { ImageColor3 = Colors.Text })
+			Tween(AutoFitBtn, 0.2, "Sine", "Out", { BackgroundTransparency = 0.3 })
+			
+			-- 隐藏状态
+			Tween(statusOverlay, 0.3, "Sine", "Out", { TextTransparency = 1 })
+		end
+		
+		-- 保存配置
+		currentConfig.autoFitScreen = autoFitEnabled
+		saveConfig(currentConfig)
 	end)
 	
-	AutoUIScaleBtn.MouseButton1Click:Connect(function()
-		spawn(function()
-			Ripple(AutoUIScaleBtn)
-		end)
-		toggleAutoUIScale()
-	end)
-	
-	-- 根据配置初始化状态
-	if config.colorInverted then
-		toggleColorInvert()
-	end
-	if config.autoUIScale then
-		toggleAutoUIScale()
+	-- 初始化按钮状态
+	if autoFitEnabled then
+		AutoFitBtn.ImageColor3 = Colors.Accent
+		AutoFitBtn.BackgroundTransparency = 0
+	else
+		Tween(AutoFitBtn, 0, "Sine", "Out", { ImageColor3 = Colors.Text })
+		Tween(AutoFitBtn, 0, "Sine", "Out", { BackgroundTransparency = 0.3 })
 	end
 	
 	local TitleBar = Instance.new("Frame")
@@ -803,7 +759,7 @@ function library.new(library, name, theme)
 				Btn.Font = Enum.Font.GothamSemibold
 				Btn.Text = "   " .. text
 				Btn.TextColor3 = Colors.Text
-				BBtn.TextSize = 15
+				Btn.TextSize = 15
 				Btn.TextXAlignment = Enum.TextXAlignment.Left
 				
 				CreateGlassEffect(Btn)
