@@ -295,13 +295,18 @@ function library.new(library, name, theme)
 	TabButtons.Position = UDim2.new(0, 5, 0, 5)
 	TabButtons.Size = UDim2.new(1, -10, 1, -10)
 	TabButtons.CanvasSize = UDim2.new(0, 0, 0, 0)
-	TabButtons.ScrollBarThickness = 0
+	TabButtons.ScrollBarThickness = 2
+	TabButtons.ScrollBarImageColor3 = Colors.Secondary
 	
 	local TabButtonsL = Instance.new("UIListLayout")
 	TabButtonsL.Name = "TabBtsL"
 	TabButtonsL.Parent = TabButtons
 	TabButtonsL.SortOrder = Enum.SortOrder.LayoutOrder
 	TabButtonsL.Padding = UDim.new(0, 8)
+	
+	TabButtonsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		TabButtons.CanvasSize = UDim2.new(0, 0, 0, TabButtonsL.AbsoluteContentSize.Y + 10)
+	end)
 	
 	local TabMain = Instance.new("Frame")
 	TabMain.Name = "TabMain"
@@ -351,18 +356,20 @@ function library.new(library, name, theme)
 	end)
 	
 	local allTabs = {}
+	local tabInfos = {} -- 存储标签页信息
+	
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local searchText = SearchBox.Text:lower()
-		for _, tabInfo in pairs(allTabs) do
+		for i, tabInfo in ipairs(allTabs) do
 			local tabVisible = false
 			if searchText == "" then
 				tabVisible = true
 			else
-				if tabInfo.name:lower():find(searchText) then
+				if tabInfo.name:lower():find(searchText, 1, true) then
 					tabVisible = true
 				else
-					for _, component in pairs(tabInfo.searchableComponents or {}) do
-						if component:lower():find(searchText) then
+					for _, componentText in ipairs(tabInfo.searchableComponents or {}) do
+						if componentText:lower():find(searchText, 1, true) then
 							tabVisible = true
 							break
 						end
@@ -462,12 +469,13 @@ function library.new(library, name, theme)
 		tabL.SortOrder = Enum.SortOrder.LayoutOrder
 		tabL.Padding = UDim.new(0, 8)
 		
-		table.insert(allTabs, {
+		local tabInfo = {
 			name = name,
 			button = tabButton,
 			frame = tabFrame,
 			searchableComponents = {}
-		})
+		}
+		table.insert(allTabs, tabInfo)
 		
 		tabBtn.MouseButton1Click:Connect(function()
 			spawn(function()
@@ -491,6 +499,7 @@ function library.new(library, name, theme)
 		end)
 		
 		local tab = {}
+		tab._info = tabInfo
 		
 		function tab.section(tab, name, TabVal)
 			local Section = Instance.new("Frame")
@@ -591,7 +600,7 @@ function library.new(library, name, theme)
 			
 			function section.Button(section, text, callback)
 				local callback = callback or function() end
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				local BtnModule = Instance.new("Frame")
 				BtnModule.Name = "BtnModule"
 				BtnModule.Parent = Objs
@@ -626,7 +635,7 @@ function library.new(library, name, theme)
 			end
 			
 			function section:Label(text)
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				local LabelModule = Instance.new("Frame")
 				LabelModule.Name = "LabelModule"
 				LabelModule.Parent = Objs
@@ -659,7 +668,7 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				library.flags[flag] = enabled
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				
 				local ToggleModule = Instance.new("Frame")
 				ToggleModule.Name = "ToggleModule"
@@ -768,7 +777,7 @@ function library.new(library, name, theme)
 				}
 				local bindKey = default
 				local keyTxt = (default and (shortNames[default.Name] or default.Name) or "None")
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				
 				local KeybindModule = Instance.new("Frame")
 				KeybindModule.Name = "KeybindModule"
@@ -863,7 +872,7 @@ function library.new(library, name, theme)
 				assert(flag, "No flag provided")
 				assert(default, "No default text provided")
 				library.flags[flag] = default
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				
 				local TextboxModule = Instance.new("Frame")
 				TextboxModule.Name = "TextboxModule"
@@ -953,7 +962,7 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				assert(default, "No default value provided")
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				
 				local SliderModule = Instance.new("Frame")
 				SliderModule.Name = "SliderModule"
@@ -1143,7 +1152,7 @@ function library.new(library, name, theme)
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
 				library.flags[flag] = nil
-				table.insert(allTabs[#allTabs].searchableComponents, text)
+				table.insert(tab._info.searchableComponents, text)
 				
 				local DropdownModule = Instance.new("Frame")
 				DropdownModule.Name = "DropdownModule"
@@ -1240,6 +1249,7 @@ function library.new(library, name, theme)
 					end,
 					
 					SetOptions = function(self, options)
+						if not options or typeof(options) ~= "table" then return end
 						for _, v in next, DropdownModule:GetChildren() do
 							if v.Name:match("Option_") then
 								v:Destroy()
