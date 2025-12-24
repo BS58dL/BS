@@ -6,7 +6,7 @@ local library = {}
 local toggled = false
 library.currentTab = nil
 library.flags = {}
-library.themeManager = {} -- 主题管理器
+library.themeManager = {}
 
 local services = setmetatable({}, {
 	__index = function(t, k)
@@ -21,7 +21,6 @@ local ThemeManager = {
 	currentTheme = "Dark",
 	customThemes = {},
 	
-	-- 5个预设主题
 	Themes = {
 		Dark = {
 			Name = "Dark",
@@ -120,31 +119,26 @@ local ThemeManager = {
 		},
 	},
 	
-	-- 获取当前主题颜色
 	GetColor = function(self, colorName)
 		local theme = self.Themes[self.currentTheme]
 		return theme and theme[colorName] or self.Themes.Dark[colorName]
 	end,
 	
-	-- 设置主题
 	SetTheme = function(self, themeName, instant)
 		if not self.Themes[themeName] then return false end
 		
 		self.currentTheme = themeName
 		local theme = self.Themes[themeName]
 		
-		-- 获取主界面
 		local dogent = services.CoreGui:FindFirstChild("REN")
 		if not dogent then return false end
 		
 		local Main = dogent:FindFirstChild("Main")
 		if not Main then return false end
 		
-		-- 应用主题到所有组件
 		local function applyThemeTo(obj)
 			if not obj or not theme then return end
 			
-			-- 应用背景色
 			if obj:IsA("GuiObject") then
 				if obj.Name == "Main" then
 					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
@@ -182,7 +176,6 @@ local ThemeManager = {
 					})
 				end
 				
-				-- 更新文本颜色
 				if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
 					if obj.Text ~= "+" and obj.Text ~= "-" and obj.Text ~= "×" then
 						Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
@@ -196,14 +189,12 @@ local ThemeManager = {
 					end
 				end
 				
-				-- 更新图标颜色
 				if obj:IsA("ImageLabel") and obj.Name ~= "GlassEffect" and obj.Name ~= "DropShadow" then
 					Tween(obj, instant and 0 or 0.5, "Sine", "Out", { 
 						ImageColor3 = theme.Text
 					})
 				end
 				
-				-- 更新玻璃效果
 				if obj:FindFirstChild("GlassEffect") then
 					local glass = obj.GlassEffect
 					Tween(glass, instant and 0 or 0.5, "Sine", "Out", { 
@@ -211,7 +202,6 @@ local ThemeManager = {
 					})
 				end
 				
-				-- 更新描边
 				if obj:FindFirstChild("UIStroke") then
 					local stroke = obj.UIStroke
 					Tween(stroke, instant and 0 or 0.5, "Sine", "Out", { 
@@ -221,23 +211,21 @@ local ThemeManager = {
 				end
 			end
 			
-			-- 递归处理子组件
 			for _, child in ipairs(obj:GetChildren()) do
 				applyThemeTo(child)
 			end
 		end
 		
-		-- 从主界面开始应用
 		applyThemeTo(Main)
 		
-		-- 更新标题渐变
 		local TitleGradient = Main:FindFirstChild("TitleBar"):FindFirstChild("ScriptTitle"):FindFirstChild("UIGradient")
 		if TitleGradient then
+			local h, s, v = theme.Accent:ToHSV()
 			Tween(TitleGradient, instant and 0 or 0.5, "Sine", "Out", { 
 				Color = ColorSequence.new({
 					ColorSequenceKeypoint.new(0.00, theme.Accent),
-					ColorSequenceKeypoint.new(0.50, Color3.fromHSV(theme.Accent:ToHSV().h, theme.Accent:ToHSV().s + 0.2, theme.Accent:ToHSV().v * 0.8)),
-					ColorSequenceKeypoint.new(1.00, Color3.fromHSV(theme.Accent:ToHSV().h, theme.Accent:ToHSV().s + 0.3, theme.Accent:ToHSV().v * 0.6)),
+					ColorSequenceKeypoint.new(0.50, Color3.fromHSV(h, math.min(s + 0.2, 1), v * 0.8)),
+					ColorSequenceKeypoint.new(1.00, Color3.fromHSV(h, math.min(s + 0.3, 1), v * 0.6)),
 				})
 			})
 		end
@@ -245,11 +233,9 @@ local ThemeManager = {
 		return true
 	end,
 	
-	-- 注册自定义主题
 	RegisterCustomTheme = function(self, name, colors)
-		if self.Themes[name] then return false end -- 不允许覆盖预设主题
+		if self.Themes[name] then return false end
 		
-		-- 验证颜色表
 		local requiredColors = {
 			"Primary", "Secondary", "Accent", "Text", "Placeholder", 
 			"White", "Success", "Warning", "Danger", "Transparent",
@@ -269,8 +255,6 @@ local ThemeManager = {
 	end,
 }
 library.themeManager = ThemeManager
-
--- ==================== 原有功能保持不变 ====================
 
 local function CreateGlassEffect(instance, transparency, themeName)
 	local theme = ThemeManager.Themes[themeName or ThemeManager.currentTheme]
@@ -359,10 +343,7 @@ function drag(frame, hold)
 	end)
 end
 
--- ==================== 主创建函数 ====================
-
 function library.new(library, name, themeName)
-	-- 应用初始主题
 	if themeName and ThemeManager.Themes[themeName] then
 		ThemeManager.currentTheme = themeName
 	end
@@ -672,7 +653,7 @@ function library.new(library, name, themeName)
 		switchingTabs = false
 	end
 	
-	function window.Tab(window, name, icon)
+	function window:Tab(name, icon)
 		local tabButton = Instance.new("Frame")
 		tabButton.Name = "TabButton"
 		tabButton.Parent = TabButtons
@@ -761,7 +742,7 @@ function library.new(library, name, themeName)
 		local tab = {}
 		tab._info = tabInfo
 		
-		function tab.section(tab, name, TabVal)
+		function tab:Section(name, TabVal)
 			local Section = Instance.new("Frame")
 			Section.Name = "Section"
 			Section.Parent = tabFrame
@@ -858,7 +839,7 @@ function library.new(library, name, themeName)
 			
 			local section = {}
 			
-			function section.Button(section, text, callback)
+			function section:Button(text, callback)
 				local callback = callback or function() end
 				table.insert(tab._info.searchableComponents, text)
 				local BtnModule = Instance.new("Frame")
@@ -922,7 +903,7 @@ function library.new(library, name, themeName)
 				return TextLabel
 			end
 			
-			function section.Toggle(section, text, flag, enabled, callback)
+			function section:Toggle(text, flag, enabled, callback)
 				local callback = callback or function() end
 				local enabled = enabled or false
 				assert(text, "No text provided")
@@ -1007,7 +988,7 @@ function library.new(library, name, themeName)
 				return funcs
 			end
 			
-			function section.Keybind(section, text, default, callback)
+			function section:Keybind(text, default, callback)
 				local callback = callback or function() end
 				assert(text, "No text provided")
 				assert(default, "No default key provided")
@@ -1126,7 +1107,7 @@ function library.new(library, name, themeName)
 				KeybindValue.Size = UDim2.new(0, KeybindValue.TextBounds.X + 30, 0, 28)
 			end
 			
-			function section.Textbox(section, text, flag, default, callback)
+			function section:Textbox(text, flag, default, callback)
 				local callback = callback or function() end
 				assert(text, "No text provided")
 				assert(flag, "No flag provided")
@@ -1212,7 +1193,7 @@ function library.new(library, name, themeName)
 				BoxBG.Size = UDim2.new(0, TextBox.TextBounds.X + 40, 0, 28)
 			end
 			
-			function section.Slider(section, text, flag, default, min, max, precise, callback)
+			function section:Slider(text, flag, default, min, max, precise, callback)
 				local callback = callback or function() end
 				local min = min or 1
 				local max = max or 10
@@ -1406,7 +1387,7 @@ function library.new(library, name, themeName)
 				return funcs
 			end
 			
-			function section.Dropdown(section, text, flag, options, callback)
+			function section:Dropdown(text, flag, options, callback)
 				local callback = callback or function() end
 				local options = options or {}
 				assert(text, "No text provided")
@@ -1543,8 +1524,7 @@ function library.new(library, name, themeName)
 				return funcs
 			end
 			
-			-- 自定义颜色选择器控件
-			function section.ColorPicker(section, text, defaultColor, callback)
+			function section:ColorPicker(text, defaultColor, callback)
 				local callback = callback or function() end
 				table.insert(tab._info.searchableComponents, text)
 				
@@ -1591,7 +1571,6 @@ function library.new(library, name, themeName)
 				ColorPreviewStroke.Parent = ColorPreview
 				
 				ColorPickerBtn.MouseButton1Click:Connect(function()
-					-- 简单的颜色选择（在实际项目中可以扩展为完整颜色选择器）
 					spawn(function()
 						Ripple(ColorPickerBtn)
 					end)
@@ -1619,56 +1598,47 @@ function library.new(library, name, themeName)
 		return tab
 	end
 	
-	-- 添加主题管理功能到window对象
-	function window.SetTheme(window, themeName)
+	function window:SetTheme(themeName)
 		return ThemeManager:SetTheme(themeName)
 	end
 	
-	function window.RegisterCustomTheme(window, name, colors)
+	function window:RegisterCustomTheme(name, colors)
 		return ThemeManager:RegisterCustomTheme(name, colors)
 	end
 	
-	function window.GetCurrentTheme(window)
+	function window:GetCurrentTheme()
 		return ThemeManager.currentTheme
 	end
 	
-	-- 创建主题管理标签页
 	spawn(function()
 		local themeTab = window:Tab("主题管理", 4370341699)
 		local section = themeTab:Section("主题设置")
 		
-		-- 主题切换下拉菜单
 		local themeOptions = {}
 		for themeName, _ in pairs(ThemeManager.Themes) do
 			table.insert(themeOptions, themeName)
 		end
 		
-		section:Dropdown("选择主题", "currentTheme", themeOptions, function(selected)
+		local themeDropdown = section:Dropdown("选择主题", "currentTheme", themeOptions, function(selected)
 			window:SetTheme(selected)
 		end)
 		
-		-- 显示当前主题
-		section:Label("当前主题: " .. ThemeManager.currentTheme)
+		local currentThemeLabel = section:Label("当前主题: " .. ThemeManager.currentTheme)
 		
-		-- 自定义颜色编辑器
 		section:Label("自定义主题编辑器")
 		
-		-- 为每个颜色创建颜色选择器
 		local colorPickers = {}
 		local colorNames = {"Primary", "Secondary", "Accent", "Text", "Placeholder"}
 		
 		for _, colorName in ipairs(colorNames) do
 			local colorPicker = section:ColorPicker(colorName .. " 颜色", ThemeManager:GetColor(colorName), function(color)
-				-- 这里可以保存到自定义主题
 			end)
 			colorPickers[colorName] = colorPicker
 		end
 		
-		-- 保存自定义主题按钮
 		section:Button("保存为自定义主题", function()
-			-- 获取所有颜色选择器的值
 			local customColors = {
-				Name = "Custom_" .. tostring(tick()),
+				Name = "Custom_" .. string.sub(tostring(tick()), 8),
 				Primary = colorPickers["Primary"]:GetColor(),
 				Secondary = colorPickers["Secondary"]:GetColor(),
 				Accent = colorPickers["Accent"]:GetColor(),
@@ -1683,21 +1653,16 @@ function library.new(library, name, themeName)
 				StrokeTransparency = 0.5,
 			}
 			
-			-- 注册并切换到新主题
 			window:RegisterCustomTheme(customColors.Name, customColors)
 			window:SetTheme(customColors.Name)
 			
-			-- 更新下拉菜单
-			local dropdown = themeTab.frame:FindFirstChild("DropdownModule")
-			if dropdown then
-				dropdown:SetOptions(themeOptions)
+			themeOptions = {}
+			for themeName, _ in pairs(ThemeManager.Themes) do
+				table.insert(themeOptions, themeName)
 			end
+			themeDropdown:SetOptions(themeOptions)
 			
-			-- 更新标签
-			local label = themeTab.frame:FindFirstChild("LabelModule")
-			if label then
-				label.Text = "当前主题: " .. customColors.Name
-			end
+			currentThemeLabel.Text = "当前主题: " .. customColors.Name
 		end)
 	end)
 	
