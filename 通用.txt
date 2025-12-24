@@ -16,34 +16,23 @@ local mouse = services.Players.LocalPlayer:GetMouse()
 
 -- ========== 现代主题系统 ==========
 local Theme = {
-	-- 主色调
-	Primary = Color3.fromRGB(30, 136, 229),      -- 现代蓝色
-	PrimaryDark = Color3.fromRGB(25, 118, 210),   -- 深色蓝
-	
-	-- 背景系统
-	Background = Color3.fromRGB(18, 18, 18),      -- 深色背景
-	Surface = Color3.fromRGB(30, 30, 30),         -- 表面色
-	SurfaceElevated = Color3.fromRGB(40, 40, 40), -- 抬升表面
-	
-	-- 文本系统
-	TextPrimary = Color3.fromRGB(255, 255, 255),  -- 主要文本
-	TextSecondary = Color3.fromRGB(200, 200, 200), -- 次要文本
-	TextHint = Color3.fromRGB(150, 150, 150),     -- 提示文本
-	
-	-- 状态色
+	Primary = Color3.fromRGB(30, 136, 229),
+	PrimaryDark = Color3.fromRGB(25, 118, 210),
+	Background = Color3.fromRGB(18, 18, 18),
+	Surface = Color3.fromRGB(30, 30, 30),
+	SurfaceElevated = Color3.fromRGB(40, 40, 40),
+	TextPrimary = Color3.fromRGB(255, 255, 255),
+	TextSecondary = Color3.fromRGB(200, 200, 200),
+	TextHint = Color3.fromRGB(150, 150, 150),
 	Success = Color3.fromRGB(46, 204, 113),
 	Warning = Color3.fromRGB(241, 196, 15),
 	Error = Color3.fromRGB(231, 76, 60),
-	
-	-- 透明度系统
 	Transparency = {
-		High = 0.15,   -- 高不透明
-		Medium = 0.3,  -- 中等透明
-		Low = 0.5,     -- 低不透明
-		VeryLow = 0.7, -- 极低不透明
+		High = 0.15,
+		Medium = 0.3,
+		Low = 0.5,
+		VeryLow = 0.7,
 	},
-	
-	-- 圆角
 	Radius = {
 		Small = UDim.new(0, 6),
 		Medium = UDim.new(0, 10),
@@ -68,9 +57,9 @@ function Tween(obj, duration, properties, style, direction)
 	return tween
 end
 
--- ========== 涟漪效果-现代版 ==========
+-- ========== 涟漪效果 ==========
 function CreateRipple(obj, color)
-	color = color or Color3.fromRGB(255, 255, 255)
+	color = color or Theme.Primary
 	spawn(function()
 		if not obj.ClipsDescendants then
 			obj.ClipsDescendants = true
@@ -82,7 +71,7 @@ function CreateRipple(obj, color)
 		ripple.BackgroundTransparency = 1
 		ripple.ZIndex = 10
 		ripple.Image = "rbxassetid://2708891598"
-		ripple.ImageTransparency = 0.8
+		ripple.ImageTransparency = 0.7
 		ripple.ImageColor3 = color
 		ripple.ScaleType = Enum.ScaleType.Fit
 		
@@ -101,81 +90,10 @@ function CreateRipple(obj, color)
 	end)
 end
 
--- ========== 标签切换系统 ==========
-local switchingTabs = false
-
-function SwitchTab(newTab)
-	if switchingTabs then return end
-	
-	local oldTab = library.currentTab
-	if oldTab and oldTab[1] == newTab[1] then return end
-	
-	switchingTabs = true
-	
-	-- 旧标签淡出
-	if oldTab then
-		Tween(oldTab[1], 0.25, { ImageTransparency = 0.7 })
-		Tween(oldTab[1].TabText, 0.25, { TextTransparency = 0.5, TextColor3 = Theme.TextSecondary })
-		Tween(oldTab[2], 0.25, { Position = UDim2.new(0.05, 0, 0, 0), GroupTransparency = 0.5 })
-		wait(0.2)
-		oldTab[2].Visible = false
-	end
-	
-	-- 新标签淡入
-	library.currentTab = newTab
-	newTab[2].Visible = true
-	Tween(newTab[1], 0.25, { ImageTransparency = 0 })
-	Tween(newTab[1].TabText, 0.25, { TextTransparency = 0, TextColor3 = Theme.TextPrimary })
-	Tween(newTab[2], 0.3, { Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 0 }, "Back", "Out")
-	
-	wait(0.25)
-	switchingTabs = false
-end
-
--- ========== 拖拽系统-增强版 ==========
-function EnableDragging(frame, dragHandle)
-	dragHandle = dragHandle or frame
-	local dragging, dragInput, dragStart, startPos
-	
-	local function update(input)
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(
-			startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y
-		)
-	end
-	
-	dragHandle.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or
-		   input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPos = frame.Position
-			Tween(frame, 0.1, { Size = UDim2.new(frame.Size.X.Scale, frame.Size.X.Offset * 1.02, 
-				frame.Size.Y.Scale, frame.Size.Y.Offset * 1.02) })
-		end
-	end)
-	
-	dragHandle.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or
-		   input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-			Tween(frame, 0.1, { Size = UDim2.new(frame.Size.X.Scale, frame.Size.X.Offset / 1.02, 
-				frame.Size.Y.Scale, frame.Size.Y.Offset / 1.02) })
-		end
-	end)
-	
-	services.UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			update(input)
-		end
-	end)
-end
-
 -- ========== 主UI创建 ==========
 function library.new(library, name)
 	-- 清理旧UI
-	for _, v in pairs(services.CoreGui:GetChildren()) do
+	for _, v in pairs(services.CoreGui:GetChildren() do
 		if v.Name == "ModernUI" then
 			v:Destroy()
 		end
@@ -192,7 +110,7 @@ function library.new(library, name)
 		syn.protect_gui(ui)
 	end
 	
-	-- 主容器-玻璃效果
+	-- 主容器
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
 	Main.Parent = ui
@@ -203,7 +121,6 @@ function library.new(library, name)
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 	Main.Size = UDim2.new(0, 650, 0, 420)
 	Main.Active = true
-	Main.Draggable = false
 	
 	-- 玻璃模糊效果
 	local Blur = Instance.new("UIBlurEffect")
@@ -219,7 +136,7 @@ function library.new(library, name)
 	Stroke.Thickness = 1
 	Stroke.Transparency = 0.7
 	
-	-- 现代圆角
+	-- 圆角
 	local MainCorner = Instance.new("UICorner")
 	MainCorner.Name = "MainCorner"
 	MainCorner.CornerRadius = Theme.Radius.Large
@@ -239,7 +156,41 @@ function library.new(library, name)
 	Shadow.ScaleType = Enum.ScaleType.Slice
 	Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
 	
-	-- 侧边栏-深色
+	-- ===== 删除按钮（右上角）=====
+	local CloseBtn = Instance.new("TextButton")
+	CloseBtn.Name = "CloseBtn"
+	CloseBtn.Parent = Main
+	CloseBtn.BackgroundColor3 = Theme.Error
+	CloseBtn.BackgroundTransparency = 0.3
+	CloseBtn.BorderSizePixel = 0
+	CloseBtn.Position = UDim2.new(1, -40, 0, 10)
+	CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+	CloseBtn.AutoButtonColor = false
+	CloseBtn.Font = Enum.Font.GothamBold
+	CloseBtn.Text = "×"
+	CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	CloseBtn.TextSize = 24
+	CloseBtn.ZIndex = 100
+	
+	local CloseBtnCorner = Instance.new("UICorner")
+	CloseBtnCorner.CornerRadius = Theme.Radius.Medium
+	CloseBtnCorner.Parent = CloseBtn
+	
+	CloseBtn.MouseEnter:Connect(function()
+		Tween(CloseBtn, 0.2, { BackgroundTransparency = 0.1, Size = UDim2.new(0, 32, 0, 32) })
+	end)
+	
+	CloseBtn.MouseLeave:Connect(function()
+		Tween(CloseBtn, 0.2, { BackgroundTransparency = 0.3, Size = UDim2.new(0, 30, 0, 30) })
+	end)
+	
+	CloseBtn.MouseButton1Click:Connect(function()
+		CreateRipple(CloseBtn, Color3.fromRGB(255, 255, 255))
+		wait(0.2)
+		ui:Destroy()
+	end)
+	
+	-- 侧边栏
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Name = "Sidebar"
 	Sidebar.Parent = Main
@@ -264,7 +215,6 @@ function library.new(library, name)
 	Title.Text = name or "SCRIPT"
 	Title.TextColor3 = Theme.TextPrimary
 	Title.TextSize = 18
-	Title.TextTransparency = 0
 	Title.TextXAlignment = Enum.TextXAlignment.Center
 	
 	-- 标题渐变动画
@@ -325,11 +275,48 @@ function library.new(library, name)
 	OpenBtnStroke.Transparency = 0.5
 	OpenBtnStroke.Parent = OpenBtn
 	
-	-- 拖拽功能
-	EnableDragging(Main)
-	EnableDragging(OpenBtn)
+	-- 拖拽功能（改进版）
+	local dragging, dragInput, dragStart, startPos
 	
-	-- 开关功能
+	Main.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or
+		   input.UserInputType == Enum.UserInputType.Touch then
+			-- 检查是否点击在关闭按钮上
+			if CloseBtn.Active and CloseBtn.AbsolutePosition.X < input.Position.X and
+			   input.Position.X < CloseBtn.AbsolutePosition.X + CloseBtn.AbsoluteSize.X and
+			   CloseBtn.AbsolutePosition.Y < input.Position.Y and
+			   input.Position.Y < CloseBtn.AbsolutePosition.Y + CloseBtn.AbsoluteSize.Y then
+				return
+			end
+			
+			dragging = true
+			dragStart = input.Position
+			startPos = Main.Position
+			Tween(Main, 0.1, { Size = UDim2.new(0, 660, 0, 430) })
+		end
+	end)
+	
+	Main.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or
+		   input.UserInputType == Enum.UserInputType.Touch then
+			if dragging then
+				dragging = false
+				Tween(Main, 0.1, { Size = UDim2.new(0, 650, 0, 420) })
+			end
+		end
+	end)
+	
+	Main.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			local delta = input.Position - dragStart
+			Main.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+	
+	-- 开关UI功能
 	OpenBtn.MouseButton1Click:Connect(function()
 		Main.Visible = not Main.Visible
 		if Main.Visible then
@@ -340,20 +327,40 @@ function library.new(library, name)
 		end
 	end)
 	
-	-- 快捷键
+	-- 快捷键（Insert键）
 	services.UserInputService.InputEnded:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
-		if input.KeyCode == Enum.KeyCode.Insert or input.KeyCode == Enum.KeyCode.F4 then
+		if input.KeyCode == Enum.KeyCode.Insert then
 			Main.Visible = not Main.Visible
 		end
 	end)
+	
+	-- Tab切换功能
+	local function SwitchTab(newTab)
+		local oldTab = library.currentTab
+		if oldTab and oldTab[1] == newTab[1] then return end
+		
+		-- 旧标签淡出
+		if oldTab then
+			Tween(oldTab[1], 0.25, { BackgroundTransparency = 0.3 })
+			Tween(oldTab[1].TabText, 0.25, { TextTransparency = 0.5, TextColor3 = Theme.TextSecondary })
+			wait(0.2)
+			oldTab[2].Visible = false
+		end
+		
+		-- 新标签淡入
+		library.currentTab = newTab
+		newTab[2].Visible = true
+		Tween(newTab[1], 0.25, { BackgroundTransparency = 0.1 })
+		Tween(newTab[1].TabText, 0.25, { TextTransparency = 0, TextColor3 = Theme.TextPrimary })
+	end
 	
 	-- 窗口对象
 	local window = {}
 	
 	-- ========== 创建标签页 ==========
 	function window.Tab(window, tabName, iconId)
-		local iconId = iconId or "4370341699"
+		iconId = iconId or "4370341699"
 		
 		-- 标签按钮
 		local TabButton = Instance.new("Frame")
@@ -402,7 +409,6 @@ function library.new(library, name)
 		TabPage.ScrollBarImageTransparency = 0.5
 		TabPage.Visible = false
 		TabPage.CanvasSize = UDim2.new(0, 0, 0, 0)
-		TabPage.GroupTransparency = 0.5
 		
 		local PageLayout = Instance.new("UIListLayout")
 		PageLayout.Name = "PageLayout"
@@ -423,7 +429,6 @@ function library.new(library, name)
 			end
 		end)
 		
-		-- 悬停效果
 		TabButton.MouseEnter:Connect(function()
 			Tween(TabButton, 0.2, { BackgroundTransparency = 0.1 })
 			Tween(TabIcon, 0.2, { ImageColor3 = Theme.TextPrimary })
@@ -438,12 +443,11 @@ function library.new(library, name)
 			end
 		end)
 		
-		-- 默认选中第一个标签
 		if library.currentTab == nil then
 			SwitchTab({TabButton, TabPage})
 		end
 		
-		-- 标签对象
+		-- Tab对象
 		local tab = {}
 		
 		-- ========== 创建区域(Section) ==========
@@ -469,7 +473,6 @@ function library.new(library, name)
 			SectionStroke.Transparency = 0.8
 			SectionStroke.Parent = Section
 			
-			-- 标题栏
 			local Header = Instance.new("Frame")
 			Header.Name = "Header"
 			Header.Parent = Section
@@ -488,7 +491,6 @@ function library.new(library, name)
 			SectionTitle.TextSize = 16
 			SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 			
-			-- 展开/收起图标
 			local ToggleIcon = Instance.new("ImageLabel")
 			ToggleIcon.Name = "ToggleIcon"
 			ToggleIcon.Parent = Header
@@ -498,7 +500,6 @@ function library.new(library, name)
 			ToggleIcon.Image = "rbxassetid://6031302934"
 			ToggleIcon.ImageColor3 = Theme.TextSecondary
 			
-			-- 内容容器
 			local Content = Instance.new("Frame")
 			Content.Name = "Content"
 			Content.Parent = Section
@@ -512,7 +513,6 @@ function library.new(library, name)
 			ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			ContentLayout.Padding = UDim.new(0, 10)
 			
-			-- 展开/收起功能
 			local isOpen = defaultOpen
 			
 			local function updateSize()
@@ -569,7 +569,6 @@ function library.new(library, name)
 				ButtonStroke.Transparency = 0.5
 				ButtonStroke.Parent = Button
 				
-				-- 悬停效果
 				Button.MouseEnter:Connect(function()
 					Tween(Button, 0.2, { BackgroundTransparency = 0.1, Size = UDim2.new(1, -15, 0, 45) })
 					Tween(ButtonStroke, 0.2, { Thickness = 1 })
@@ -597,7 +596,7 @@ function library.new(library, name)
 				end)
 			end
 			
-			-- ========== 创建开关 ==========
+			-- ========== 创建开关（改进版）==========
 			function section.Toggle(section, text, flag, default, callback)
 				callback = callback or function() end
 				default = default or false
@@ -628,7 +627,6 @@ function library.new(library, name)
 				ToggleLabel.TextSize = 15
 				ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
 				
-				-- 开关轨道
 				local Track = Instance.new("Frame")
 				Track.Name = "Track"
 				Track.Parent = Toggle
@@ -641,7 +639,6 @@ function library.new(library, name)
 				TrackCorner.CornerRadius = UDim.new(1, 0)
 				TrackCorner.Parent = Track
 				
-				-- 开关滑块
 				local Thumb = Instance.new("Frame")
 				Thumb.Name = "Thumb"
 				Thumb.Parent = Track
@@ -654,7 +651,6 @@ function library.new(library, name)
 				ThumbCorner.CornerRadius = UDim.new(1, 0)
 				ThumbCorner.Parent = Thumb
 				
-				-- 悬停效果
 				Toggle.MouseEnter:Connect(function()
 					Tween(Toggle, 0.2, { BackgroundTransparency = 0.1 })
 				end)
@@ -663,7 +659,6 @@ function library.new(library, name)
 					Tween(Toggle, 0.2, { BackgroundTransparency = 0.3 })
 				end)
 				
-				-- 功能
 				local funcs = {}
 				
 				function funcs:SetState(state)
@@ -693,10 +688,14 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			-- ========== 创建滑块 ==========
-			function section.Slider(section, text, flag, default, min, max, precise, format, callback)
+			-- ========== 创建滑块（向后兼容）==========
+			function section.Slider(section, text, flag, default, min, max, precise, callback)
+				-- 向后兼容: 支持旧版调用方式
 				callback = callback or function() end
-				format = format or "%s"
+				if type(precise) == "function" then
+					callback = precise
+					precise = false
+				end
 				precise = precise or false
 				min = min or 0
 				max = max or 100
@@ -728,7 +727,6 @@ function library.new(library, name)
 				SliderLabel.TextSize = 15
 				SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
 				
-				-- 数值显示
 				local ValueLabel = Instance.new("TextLabel")
 				ValueLabel.Name = "ValueLabel"
 				ValueLabel.Parent = Slider
@@ -738,7 +736,7 @@ function library.new(library, name)
 				ValueLabel.Position = UDim2.new(1, -60, 0, 10)
 				ValueLabel.Size = UDim2.new(0, 50, 0, 20)
 				ValueLabel.Font = Enum.Font.GothamBold
-				ValueLabel.Text = string.format(format, default)
+				ValueLabel.Text = tostring(default)
 				ValueLabel.TextColor3 = Theme.TextPrimary
 				ValueLabel.TextSize = 13
 				
@@ -746,7 +744,6 @@ function library.new(library, name)
 				ValueCorner.CornerRadius = Theme.Radius.Small
 				ValueCorner.Parent = ValueLabel
 				
-				-- 滑块轨道
 				local Track = Instance.new("Frame")
 				Track.Name = "Track"
 				Track.Parent = Slider
@@ -759,7 +756,6 @@ function library.new(library, name)
 				TrackCorner.CornerRadius = UDim.new(1, 0)
 				TrackCorner.Parent = Track
 				
-				-- 滑块填充
 				local Fill = Instance.new("Frame")
 				Fill.Name = "Fill"
 				Fill.Parent = Track
@@ -771,7 +767,6 @@ function library.new(library, name)
 				FillCorner.CornerRadius = UDim.new(1, 0)
 				FillCorner.Parent = Fill
 				
-				-- 滑块按钮
 				local Thumb = Instance.new("Frame")
 				Thumb.Name = "Thumb"
 				Thumb.Parent = Track
@@ -784,20 +779,6 @@ function library.new(library, name)
 				ThumbCorner.CornerRadius = UDim.new(1, 0)
 				ThumbCorner.Parent = Thumb
 				
-				local ThumbShadow = Instance.new("ImageLabel")
-				ThumbShadow.Name = "ThumbShadow"
-				ThumbShadow.Parent = Thumb
-				ThumbShadow.BackgroundTransparency = 1
-				ThumbShadow.Size = UDim2.new(1, 10, 1, 10)
-				ThumbShadow.Position = UDim2.new(0, -5, 0, -5)
-				ThumbShadow.Image = "rbxassetid://6015897843"
-				ThumbShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-				ThumbShadow.ImageTransparency = 0.7
-				ThumbShadow.ScaleType = Enum.ScaleType.Slice
-				ThumbShadow.SliceCenter = Rect.new(49, 49, 450, 450)
-				ThumbShadow.ZIndex = -1
-				
-				-- 功能
 				local funcs = {}
 				local dragging = false
 				
@@ -806,7 +787,7 @@ function library.new(library, name)
 					value = math.clamp(value, min, max)
 					
 					library.flags[flag] = value
-					ValueLabel.Text = string.format(format, value)
+					ValueLabel.Text = tostring(value)
 					
 					local percent = (value - min) / (max - min)
 					Tween(Fill, 0.1, { Size = UDim2.new(percent, 0, 1, 0) })
@@ -815,7 +796,6 @@ function library.new(library, name)
 					callback(value)
 				end
 				
-				-- 拖拽
 				local function updateValue(input)
 					local percent = (input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X
 					percent = math.clamp(percent, 0, 1)
@@ -844,7 +824,6 @@ function library.new(library, name)
 					end
 				end)
 				
-				-- 点击轨道直接跳转
 				Track.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 then
 						updateValue(input)
@@ -855,9 +834,15 @@ function library.new(library, name)
 				return funcs
 			end
 			
-			-- ========== 创建文本框 ==========
+			-- ========== 创建文本框（向后兼容）==========
+			-- 这是关键修复：同时支持 Textbox 和 TextBox 调用
 			function section.Textbox(section, text, flag, default, placeholder, callback)
+				-- 向后兼容参数处理
 				callback = callback or function() end
+				if type(placeholder) == "function" then
+					callback = placeholder
+					placeholder = "输入文本..."
+				end
 				default = default or ""
 				placeholder = placeholder or "输入文本..."
 				library.flags[flag] = default
@@ -907,7 +892,6 @@ function library.new(library, name)
 				InputCorner.CornerRadius = Theme.Radius.Small
 				InputCorner.Parent = InputBox
 				
-				-- 悬停效果
 				Textbox.MouseEnter:Connect(function()
 					Tween(Textbox, 0.2, { BackgroundTransparency = 0.1 })
 				end)
@@ -916,7 +900,6 @@ function library.new(library, name)
 					Tween(Textbox, 0.2, { BackgroundTransparency = 0.3 })
 				end)
 				
-				-- 输入事件
 				InputBox.Focused:Connect(function()
 					Tween(InputBox, 0.2, { BackgroundTransparency = 0.2 })
 				end)
@@ -931,6 +914,10 @@ function library.new(library, name)
 					library.flags[flag] = InputBox.Text
 				end)
 			end
+			
+			-- 向后兼容：支持旧版调用大小写
+			section.textbox = section.Textbox
+			section.TextBox = section.Textbox
 			
 			-- ========== 创建下拉菜单 ==========
 			function section.Dropdown(section, text, flag, options, callback)
@@ -1080,7 +1067,7 @@ function library.new(library, name)
 				end
 				
 				function funcs:SetOptions(newOptions)
-					for _, v in pairs(OptionsList:GetChildren() do
+					for _, v in pairs(OptionsList:GetChildren()) do
 						if v:IsA("TextButton") and v.Name:match("Option_") then
 							v:Destroy()
 						end
@@ -1108,7 +1095,6 @@ function library.new(library, name)
 					OptionsList.Visible = false
 				end
 				
-				-- 搜索功能
 				SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 					local searchText = SearchBox.Text:lower()
 					for _, option in pairs(OptionsList:GetChildren()) do
@@ -1119,7 +1105,6 @@ function library.new(library, name)
 					end
 				end)
 				
-				-- 点击展开/收起
 				Header.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or
 					   input.UserInputType == Enum.UserInputType.Touch then
@@ -1131,7 +1116,6 @@ function library.new(library, name)
 					end
 				end)
 				
-				-- 初始化选项
 				funcs:SetOptions(options)
 				Label.Text = text
 				
@@ -1241,7 +1225,6 @@ function library.new(library, name)
 				KeyCorner.CornerRadius = Theme.Radius.Small
 				KeyCorner.Parent = KeyButton
 				
-				-- 监听按键
 				services.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 					if gameProcessed then return end
 					if input.KeyCode == currentKey then
@@ -1249,7 +1232,6 @@ function library.new(library, name)
 					end
 				end)
 				
-				-- 设置按键
 				KeyButton.MouseButton1Click:Connect(function()
 					KeyButton.Text = "..."
 					Tween(KeyButton, 0.2, { BackgroundColor3 = Theme.Primary })
@@ -1270,7 +1252,6 @@ function library.new(library, name)
 					Tween(KeyButton, 0.2, { BackgroundColor3 = Theme.Surface })
 				end)
 				
-				-- 悬停效果
 				Keybind.MouseEnter:Connect(function()
 					Tween(Keybind, 0.2, { BackgroundTransparency = 0.1 })
 				end)
@@ -1279,12 +1260,10 @@ function library.new(library, name)
 					Tween(Keybind, 0.2, { BackgroundTransparency = 0.3 })
 				end)
 				
-				local funcs = {
+				return {
 					GetKey = function() return currentKey end,
 					SetKey = function(_, key) currentKey = key; keyName = shortNames[key.Name] or key.Name; KeyButton.Text = keyName end,
 				}
-				
-				return funcs
 			end
 			
 			return section
@@ -1296,4 +1275,11 @@ function library.new(library, name)
 	return window
 end
 
+-- ========== 向后兼容API ==========
+-- 确保所有旧版方法名都能正常工作
+local oldLibrary = {
+	new = library.new,
+}
+
+-- 导出库
 return library
