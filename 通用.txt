@@ -461,23 +461,23 @@ function library.new(library, name, theme)
 	TabMain.Position = UDim2.new(0, 145, 0, 0)
 	TabMain.Size = UDim2.new(1, -145, 1, 0)
 	
-	local Open = Instance.new("ImageButton")
+	local Open = Instance.new("TextButton")
 	Open.Name = "Open"
 	Open.Parent = dogent
 	Open.BackgroundColor3 = Colors.Primary
 	Open.BackgroundTransparency = Colors.Transparent
 	Open.Position = UDim2.new(0.01, 0, 0.3, 0)
 	Open.Size = UDim2.new(0, 35, 0, 35)
-	Open.Image = "BS"
-	Open.ImageRectOffset = Vector2.new(764, 324)
-	Open.ImageRectSize = Vector2.new(36, 36)
-	Open.ImageColor3 = Colors.Text
+	Open.Font = Enum.Font.GothamBold
+	Open.Text = "BS"
+	Open.TextColor3 = Colors.Text
+	Open.TextSize = 14
 	Open.Active = true
 	Open.Draggable = true
 	Open.ZIndex = 100
 	
 	local OpenC = Instance.new("UICorner")
-	OpenC.CornerRadius = UDim.new(0, 8)
+	OpenC.CornerRadius = UDim.new(0, 17)
 	OpenC.Parent = Open
 	
 	CreateGlassEffect(Open)
