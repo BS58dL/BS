@@ -23,6 +23,17 @@ local Colors = {
 	Transparent = 0.25,
 }
 
+local UIConfig = {
+	MinHeight = 300,
+	MaxHeight = 650,
+	DefaultWidth = 650,
+	TabButtonHeight = 40,
+	SectionHeaderHeight = 42,
+	ComponentHeight = 40,
+	ComponentSpacing = 8,
+	WindowPadding = 100,
+}
+
 local function CreateGlassEffect(instance, transparency)
 	instance.BackgroundTransparency = transparency or Colors.Transparent
 	if not instance:FindFirstChild("GlassEffect") then
@@ -128,7 +139,7 @@ function library.new(library, name, theme)
 	Main.Parent = dogent
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
 	Main.BackgroundColor3 = Colors.Primary
-	Main.Size = UDim2.new(0, 650, 0, 400)
+	Main.Size = UDim2.new(0, UIConfig.DefaultWidth, 0, UIConfig.MinHeight)
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 	Main.ZIndex = 1
 	Main.Active = true
@@ -305,15 +316,19 @@ function library.new(library, name, theme)
 	TabButtonsL.Padding = UDim.new(0, 8)
 	
 	TabButtonsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		TabButtons.CanvasSize = UDim2.new(0, 0, 0, TabButtonsL.AbsoluteContentSize.Y + 10)
+		local contentHeight = TabButtonsL.AbsoluteContentSize.Y
+		TabButtons.CanvasSize = UDim2.new(0, 0, 0, contentHeight + 10)
 	end)
 	
-	local TabMain = Instance.new("Frame")
+	local TabMain = Instance.new("ScrollingFrame")
 	TabMain.Name = "TabMain"
 	TabMain.Parent = Content
 	TabMain.BackgroundTransparency = 1
 	TabMain.Position = UDim2.new(0, 145, 0, 0)
 	TabMain.Size = UDim2.new(1, -145, 1, 0)
+	TabMain.CanvasSize = UDim2.new(0, 0, 0, 0)
+	TabMain.ScrollBarThickness = 2
+	TabMain.ScrollBarImageColor3 = Colors.Secondary
 	
 	local Open = Instance.new("TextButton")
 	Open.Name = "Open"
@@ -345,7 +360,7 @@ function library.new(library, name, theme)
 	Open.MouseButton1Click:Connect(function()
 		Main.Visible = not Main.Visible
 		if Main.Visible then
-			Tween(Main, 0.2, "Sine", "Out", { Size = UDim2.new(0, 650, 0, 400) })
+			Tween(Main, 0.2, "Sine", "Out", { Size = UDim2.new(0, UIConfig.DefaultWidth, 0, Main.AbsoluteSize.Y) })
 		end
 	end)
 	
@@ -356,10 +371,30 @@ function library.new(library, name, theme)
 	end)
 	
 	local allTabs = {}
-	local tabInfos = {} -- 存储标签页信息
+	local activeTab = nil
+	
+	local function UpdateWindowHeight()
+		if not activeTab then return end
+		
+		local tabContentHeight = 0
+		local tabL = activeTab.frame:FindFirstChild("TabL")
+		
+		if tabL then
+			tabContentHeight = tabL.AbsoluteContentSize.Y
+		end
+		
+		local newHeight = math.clamp(
+			tabContentHeight + UIConfig.WindowPadding,
+			UIConfig.MinHeight,
+			UIConfig.MaxHeight
+		)
+		
+		Tween(Main, 0.2, "Sine", "Out", { Size = UDim2.new(0, UIConfig.DefaultWidth, 0, newHeight) })
+	end
 	
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local searchText = SearchBox.Text:lower()
+		
 		for i, tabInfo in ipairs(allTabs) do
 			local tabVisible = false
 			if searchText == "" then
@@ -376,7 +411,14 @@ function library.new(library, name, theme)
 					end
 				end
 			end
+			
 			tabInfo.button.Visible = tabVisible
+		end
+		
+		wait()
+		if TabButtonsL then
+			local contentHeight = TabButtonsL.AbsoluteContentSize.Y
+			TabButtons.CanvasSize = UDim2.new(0, 0, 0, contentHeight + 10)
 		end
 	end)
 	
@@ -391,14 +433,17 @@ function library.new(library, name, theme)
 		if old == nil then
 			new.frame.Visible = true
 			library.currentTab = new
+			activeTab = new
 			Tween(new.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0 })
 			Tween(new.button.TabText, 0.15, "Sine", "Out", { TextTransparency = 0 })
+			UpdateWindowHeight()
 			return
 		end
 		if old.button == new.button then return end
 		
 		switchingTabs = true
 		library.currentTab = new
+		activeTab = new
 		
 		Tween(old.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0.3 })
 		Tween(new.button, 0.15, "Sine", "Out", { BackgroundTransparency = 0 })
@@ -410,6 +455,7 @@ function library.new(library, name, theme)
 		
 		task.wait(0.15)
 		switchingTabs = false
+		UpdateWindowHeight()
 	end
 	
 	function window.Tab(window, name, icon)
@@ -418,7 +464,7 @@ function library.new(library, name, theme)
 		tabButton.Parent = TabButtons
 		tabButton.BackgroundColor3 = Colors.Secondary
 		tabButton.BackgroundTransparency = 0.3
-		tabButton.Size = UDim2.new(1, 0, 0, 40)
+		tabButton.Size = UDim2.new(1, 0, 0, UIConfig.TabButtonHeight)
 		
 		local tabButtonC = Instance.new("UICorner")
 		tabButtonC.CornerRadius = UDim.new(0, 6)
@@ -454,20 +500,23 @@ function library.new(library, name, theme)
 		tabBtn.Size = UDim2.new(1, 0, 1, 0)
 		tabBtn.Text = ""
 		
-		local tabFrame = Instance.new("ScrollingFrame")
+		local tabFrame = Instance.new("Frame")
 		tabFrame.Name = "Tab"
 		tabFrame.Parent = TabMain
 		tabFrame.BackgroundTransparency = 1
 		tabFrame.Size = UDim2.new(1, 0, 1, 0)
-		tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-		tabFrame.ScrollBarThickness = 2
 		tabFrame.Visible = false
 		
 		local tabL = Instance.new("UIListLayout")
 		tabL.Name = "TabL"
 		tabL.Parent = tabFrame
 		tabL.SortOrder = Enum.SortOrder.LayoutOrder
-		tabL.Padding = UDim.new(0, 8)
+		tabL.Padding = UDim.new(0, UIConfig.ComponentSpacing)
+		
+		tabL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			wait()
+			UpdateWindowHeight()
+		end)
 		
 		local tabInfo = {
 			name = name,
@@ -494,10 +543,6 @@ function library.new(library, name, theme)
 			})
 		end
 		
-		tabL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			tabFrame.CanvasSize = UDim2.new(0, 0, 0, tabL.AbsoluteContentSize.Y + 16)
-		end)
-		
 		local tab = {}
 		tab._info = tabInfo
 		
@@ -509,7 +554,7 @@ function library.new(library, name, theme)
 			Section.BackgroundTransparency = Colors.Transparent
 			Section.BorderSizePixel = 0
 			Section.ClipsDescendants = true
-			Section.Size = UDim2.new(0.975, 0, 0, 42)
+			Section.Size = UDim2.new(0.975, 0, 0, UIConfig.SectionHeaderHeight)
 			
 			CreateGlassEffect(Section)
 			
@@ -528,7 +573,7 @@ function library.new(library, name, theme)
 			SectionText.Parent = Section
 			SectionText.BackgroundTransparency = 1
 			SectionText.Position = UDim2.new(0, 40, 0, 0)
-			SectionText.Size = UDim2.new(1, -45, 0, 42)
+			SectionText.Size = UDim2.new(1, -45, 0, UIConfig.SectionHeaderHeight)
 			SectionText.Font = Enum.Font.GothamBold
 			SectionText.Text = name
 			SectionText.TextColor3 = Colors.Text
@@ -567,33 +612,37 @@ function library.new(library, name, theme)
 			Objs.Parent = Section
 			Objs.BackgroundTransparency = 1
 			Objs.BorderSizePixel = 0
-			Objs.Position = UDim2.new(0, 6, 0, 42)
+			Objs.Position = UDim2.new(0, 6, 0, UIConfig.SectionHeaderHeight)
 			Objs.Size = UDim2.new(1, -12, 0, 0)
 			
 			local ObjsL = Instance.new("UIListLayout")
 			ObjsL.Name = "ObjsL"
 			ObjsL.Parent = Objs
 			ObjsL.SortOrder = Enum.SortOrder.LayoutOrder
-			ObjsL.Padding = UDim.new(0, 8)
+			ObjsL.Padding = UDim.new(0, UIConfig.ComponentSpacing)
+			
+			ObjsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				wait()
+				if open then
+					Section.Size = UDim2.new(0.975, 0, 0, UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing)
+				end
+				UpdateWindowHeight()
+			end)
 			
 			local open = TabVal
 			if TabVal ~= false then
-				Section.Size = UDim2.new(0.975, 0, 0, open and 42 + ObjsL.AbsoluteContentSize.Y + 10 or 42)
+				Section.Size = UDim2.new(0.975, 0, 0, open and UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing or UIConfig.SectionHeaderHeight)
 				SectionOpened.ImageTransparency = (open and 0 or 1)
 				SectionOpen.ImageTransparency = (open and 1 or 0)
 			end
 			
 			SectionToggle.MouseButton1Click:Connect(function()
 				open = not open
-				Section.Size = UDim2.new(0.975, 0, 0, open and 42 + ObjsL.AbsoluteContentSize.Y + 10 or 42)
+				Section.Size = UDim2.new(0.975, 0, 0, open and UIConfig.SectionHeaderHeight + ObjsL.AbsoluteContentSize.Y + UIConfig.ComponentSpacing or UIConfig.SectionHeaderHeight)
 				SectionOpened.ImageTransparency = (open and 0 or 1)
 				SectionOpen.ImageTransparency = (open and 1 or 0)
 				Tween(Section, 0.2, "Sine", "Out", { BackgroundTransparency = open and 0.25 or 0 })
-			end)
-			
-			ObjsL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-				if not open then return end
-				Section.Size = UDim2.new(0.975, 0, 0, 42 + ObjsL.AbsoluteContentSize.Y + 10)
+				UpdateWindowHeight()
 			end)
 			
 			local section = {}
@@ -605,7 +654,7 @@ function library.new(library, name, theme)
 				BtnModule.Name = "BtnModule"
 				BtnModule.Parent = Objs
 				BtnModule.BackgroundTransparency = 1
-				BtnModule.Size = UDim2.new(1, 0, 0, 40)
+				BtnModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local Btn = Instance.new("TextButton")
 				Btn.Name = "Btn"
@@ -674,7 +723,7 @@ function library.new(library, name, theme)
 				ToggleModule.Name = "ToggleModule"
 				ToggleModule.Parent = Objs
 				ToggleModule.BackgroundTransparency = 1
-				ToggleModule.Size = UDim2.new(1, 0, 0, 40)
+				ToggleModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local ToggleBtn = Instance.new("TextButton")
 				ToggleBtn.Name = "ToggleBtn"
@@ -783,7 +832,7 @@ function library.new(library, name, theme)
 				KeybindModule.Name = "KeybindModule"
 				KeybindModule.Parent = Objs
 				KeybindModule.BackgroundTransparency = 1
-				KeybindModule.Size = UDim2.new(1, 0, 0, 40)
+				KeybindModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local KeybindBtn = Instance.new("TextButton")
 				KeybindBtn.Name = "KeybindBtn"
@@ -878,7 +927,7 @@ function library.new(library, name, theme)
 				TextboxModule.Name = "TextboxModule"
 				TextboxModule.Parent = Objs
 				TextboxModule.BackgroundTransparency = 1
-				TextboxModule.Size = UDim2.new(1, 0, 0, 40)
+				TextboxModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local TextboxBack = Instance.new("TextButton")
 				TextboxBack.Name = "TextboxBack"
@@ -969,7 +1018,7 @@ function library.new(library, name, theme)
 				SliderModule.Parent = Objs
 				SliderModule.BackgroundTransparency = 1
 				SliderModule.ClipsDescendants = true
-				SliderModule.Size = UDim2.new(1, 0, 0, 40)
+				SliderModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local SliderBack = Instance.new("TextButton")
 				SliderBack.Name = "SliderBack"
@@ -1159,14 +1208,14 @@ function library.new(library, name, theme)
 				DropdownModule.Parent = Objs
 				DropdownModule.BackgroundTransparency = 1
 				DropdownModule.ClipsDescendants = true
-				DropdownModule.Size = UDim2.new(1, 0, 0, 40)
+				DropdownModule.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				
 				local DropdownTop = Instance.new("TextButton")
 				DropdownTop.Name = "DropdownTop"
 				DropdownTop.Parent = DropdownModule
 				DropdownTop.BackgroundColor3 = Colors.Secondary
 				DropdownTop.BackgroundTransparency = 0.3
-				DropdownTop.Size = UDim2.new(1, 0, 0, 40)
+				DropdownTop.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight)
 				DropdownTop.AutoButtonColor = false
 				DropdownTop.Font = Enum.Font.GothamSemibold
 				DropdownTop.Text = ""
@@ -1210,6 +1259,14 @@ function library.new(library, name, theme)
 				DropdownModuleL.SortOrder = Enum.SortOrder.LayoutOrder
 				DropdownModuleL.Padding = UDim.new(0, 4)
 				
+				DropdownModuleL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+					wait()
+					if open then
+						DropdownModule.Size = UDim2.new(1, 0, 0, DropdownModuleL.AbsoluteContentSize.Y + 4)
+						UpdateWindowHeight()
+					end
+				end)
+				
 				local open = false
 				local funcs = {
 					AddOption = function(self, option)
@@ -1218,7 +1275,7 @@ function library.new(library, name, theme)
 						Option.Parent = DropdownModule
 						Option.BackgroundColor3 = Colors.Secondary
 						Option.BackgroundTransparency = 0.3
-						Option.Size = UDim2.new(1, 0, 0, 32)
+						Option.Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight - 8)
 						Option.AutoButtonColor = false
 						Option.Font = Enum.Font.Gotham
 						Option.Text = option
@@ -1234,10 +1291,11 @@ function library.new(library, name, theme)
 						Option.MouseButton1Click:Connect(function()
 							open = false
 							DropdownOpen.Text = "+"
-							Tween(DropdownModule, 0.2, "Sine", "Out", { Size = UDim2.new(1, 0, 0, 40) })
+							Tween(DropdownModule, 0.2, "Sine", "Out", { Size = UDim2.new(1, 0, 0, UIConfig.ComponentHeight) })
 							callback(Option.Text)
 							DropdownText.Text = Option.Text
 							library.flags[flag] = Option.Text
+							UpdateWindowHeight()
 						end)
 					end,
 					
@@ -1264,19 +1322,14 @@ function library.new(library, name, theme)
 						open = not open
 						DropdownOpen.Text = (open and "-" or "+")
 						Tween(DropdownModule, 0.2, "Sine", "Out", {
-							Size = UDim2.new(1, 0, 0, (open and DropdownModuleL.AbsoluteContentSize.Y + 4 or 40))
+							Size = UDim2.new(1, 0, 0, (open and DropdownModuleL.AbsoluteContentSize.Y + 4 or UIConfig.ComponentHeight))
 						})
+						UpdateWindowHeight()
 					end
 				}
 				
 				DropdownOpen.MouseButton1Click:Connect(function()
 					funcs:ToggleDropVis()
-				end)
-				
-				DropdownModuleL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-					if open then
-						Tween(DropdownModule, 0.2, "Sine", "Out", { Size = UDim2.new(1, 0, 0, DropdownModuleL.AbsoluteContentSize.Y + 4) })
-					end
 				end)
 				
 				funcs:SetOptions(options)
