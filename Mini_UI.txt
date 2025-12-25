@@ -1,4 +1,5 @@
-local Library = {}
+-- UI 库核心
+local UILibrary = {}
 
 -- Services
 local Players = game:GetService("Players")
@@ -21,13 +22,11 @@ local Color3 = Color3.fromRGB
 local InstanceNew = Instance.new
 local TweenInfo = TweenInfo.new
 
--- Settings
-local Settings = {
-    Win = false,
-    Rebirth = false
-}
+-- 设置全局库对象
+_G.Library = UILibrary
+getgenv().Library = UILibrary
 
--- Create marker parts
+-- 标记部分（可选，可以删除）
 local function CreateMarkers()
     local markers = {}
     
@@ -58,27 +57,18 @@ local function CreateMarkers()
     return markers
 end
 
--- Utility function to get player tycoon hash
-local function GetTycoonHash()
-    for _, descendant in pairs(Workspace.PlayerTycoons:GetDescendants()) do
-        if descendant:IsA("ObjectValue") and descendant.Name == "Owner" then
-            if tostring(descendant.Value) == LocalPlayer.Name then
-                return descendant.Parent.Parent.Name
-            end
-        end
-    end
-    return nil
-end
+-- 创建标记（可选）
+CreateMarkers()
 
--- UI Library Core
-Library.WindowName = "BS脚本"
-Library.Flags = {}
-Library.Modules = {}
-Library.CurrentTab = nil
-Library.Notifications = {}
+-- 基础设置
+UILibrary.WindowName = "脚本"
+UILibrary.Flags = {}
+UILibrary.Modules = {}
+UILibrary.CurrentTab = nil
+UILibrary.Notifications = {}
 
--- Tween utility
-Library.Tween = function(target, properties, duration, easingStyle, easingDirection)
+-- Tween 工具
+UILibrary.Tween = function(target, properties, duration, easingStyle, easingDirection)
     return TweenService:Create(target, TweenInfo.new(
         duration or 0.25,
         Enum.EasingStyle[easingStyle or "Linear"],
@@ -86,24 +76,24 @@ Library.Tween = function(target, properties, duration, easingStyle, easingDirect
     ), properties)
 end
 
--- Tab switching
-Library.SwitchTab = function(newTab)
-    local oldTab = Library.CurrentTab
+-- 切换标签页
+UILibrary.SwitchTab = function(newTab)
+    local oldTab = UILibrary.CurrentTab
     if oldTab ~= newTab then
-        Library.CurrentTab = newTab
-        Library.Tween({Transparency = 1}, oldTab[2].Glow):Play()
-        Library.Tween({Transparency = 0}, newTab[2].Glow):Play()
+        UILibrary.CurrentTab = newTab
+        UILibrary.Tween({Transparency = 1}, oldTab[2].Glow):Play()
+        UILibrary.Tween({Transparency = 0}, newTab[2].Glow):Play()
         oldTab[1].Visible = false
         newTab[1].Visible = true
     end
 end
 
--- UI Creation
+-- 创建UI
 local ScreenGui = InstanceNew("ScreenGui")
-ScreenGui.Name = Library.WindowName
+ScreenGui.Name = UILibrary.WindowName
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Main Window
+-- 主窗口
 local MainWindow = InstanceNew("ImageLabel")
 MainWindow.Name = "Main"
 MainWindow.Parent = ScreenGui
@@ -121,7 +111,7 @@ MainCorner.CornerRadius = UDim(0, 6)
 MainCorner.Name = "MainCorner"
 MainCorner.Parent = MainWindow
 
--- Title Bar
+-- 标题栏
 local TitleBar = InstanceNew("TextLabel")
 TitleBar.Parent = MainWindow
 TitleBar.BackgroundColor3 = Color3(25, 25, 25)
@@ -129,7 +119,7 @@ TitleBar.BorderSizePixel = 0
 TitleBar.Position = UDim2(0, 6, 0, 6)
 TitleBar.Size = UDim2(0, 436, 0, 24)
 TitleBar.Font = Enum.Font.GothamBold
-TitleBar.Text = "  " .. Library.WindowName
+TitleBar.Text = "  " .. UILibrary.WindowName
 TitleBar.TextColor3 = Color3(255, 255, 255)
 TitleBar.TextSize = 14
 TitleBar.TextXAlignment = Enum.TextXAlignment.Left
@@ -140,7 +130,7 @@ TitleCorner.CornerRadius = UDim(0, 6)
 TitleCorner.Name = "TextLabelCorner"
 TitleCorner.Parent = TitleBar
 
--- Toggle Button
+-- 切换按钮
 local ToggleButton = InstanceNew("TextButton")
 ToggleButton.Name = "Open"
 ToggleButton.Parent = ScreenGui
@@ -163,7 +153,7 @@ ToggleButton.MouseButton1Down:Connect(function()
     ToggleButton.Text = WindowVisible and "隐藏" or "打开"
 end)
 
--- Sidebar
+-- 侧边栏
 local Sidebar = InstanceNew("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Parent = MainWindow
@@ -178,7 +168,7 @@ SidebarCorner.CornerRadius = UDim(0, 6)
 SidebarCorner.Name = "SidebarCorner"
 SidebarCorner.Parent = Sidebar
 
--- Tab Buttons Container
+-- 标签按钮容器
 local TabButtonsContainer = InstanceNew("ScrollingFrame")
 TabButtonsContainer.Name = "TabButtons"
 TabButtonsContainer.Parent = Sidebar
@@ -199,7 +189,7 @@ local TabButtonsPadding = InstanceNew("UIPadding")
 TabButtonsPadding.Parent = TabButtonsContainer
 TabButtonsPadding.PaddingTop = UDim(0, 6)
 
--- Tab Content Area
+-- 标签内容区域
 local TabContentArea = InstanceNew("Frame")
 TabContentArea.Name = "TabHolder"
 TabContentArea.Parent = MainWindow
@@ -214,122 +204,17 @@ TabContentCorner.CornerRadius = UDim(0, 6)
 TabContentCorner.Name = "TabHolderCorner"
 TabContentCorner.Parent = TabContentArea
 
--- Update container size
+-- 更新容器大小
 TabButtonsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     TabButtonsContainer.CanvasSize = UDim2(0, 0, 0, TabButtonsLayout.AbsoluteContentSize.Y + 12)
 end)
 
--- Notification system
-local function CreateNotificationSystem()
-    local notificationGui = InstanceNew("ScreenGui")
-    notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local toggleNotification = InstanceNew("Frame")
-    toggleNotification.Name = "ToggleNotif"
-    toggleNotification.ZIndex = 5
-    toggleNotification.AnchorPoint = Vector2.new(1, 1)
-    toggleNotification.Visible = false
-    toggleNotification.Size = UDim2.new(0, 291, 0, 56)
-    toggleNotification.Position = UDim2.new(1, 0, 1, 0)
-    toggleNotification.BackgroundColor3 = Color3.fromRGB(48, 48, 48)
-    toggleNotification.Parent = notificationGui
-    
-    local defaultNotification = InstanceNew("Frame")
-    defaultNotification.Name = "DefaultNotif"
-    defaultNotification.ZIndex = 5
-    defaultNotification.AnchorPoint = Vector2.new(1, 1)
-    defaultNotification.Visible = false
-    defaultNotification.Size = UDim2.new(0, 291, 0, 56)
-    defaultNotification.Position = UDim2.new(1, 0, 0.9999999, 0)
-    defaultNotification.BackgroundColor3 = Color3.fromRGB(48, 48, 48)
-    defaultNotification.Parent = notificationGui
-    
-    if syn then
-        syn.protect_gui(notificationGui)
-    end
-    notificationGui.Parent = LocalPlayer.PlayerGui
-    return notificationGui
-end
-
-local NotificationHolder = CreateNotificationSystem()
-local NotificationCount = 0
-local LastRemovedPosition = nil
-
--- Notification functions
-Library.SelectNotify = function(notificationData)
-    local data = notificationData or {}
-    data.TweenSpeed = data.TweenSpeed or 1
-    data.TweenInSpeed = data.TweenInSpeed or data.TweenSpeed
-    data.TweenOutSpeed = data.TweenOutSpeed or data.TweenSpeed
-    data.TweenVerticalSpeed = data.TweenVerticalSpeed or data.TweenSpeed
-    data.Title = data.Title or "Title"
-    data.Text = data.Text or "Text"
-    data.TrueText = data.TrueText or "Yes"
-    data.FalseText = data.FalseText or "No"
-    data.Duration = data.Duration or 5
-    data.Callback = data.Callback or function()
-        warn("No callback for notif")
-    end
-    
-    NotificationCount = NotificationCount + 1
-    local notif = NotificationHolder.ToggleNotif:Clone()
-    notif.Parent = NotificationHolder
-    notif.Visible = true
-    notif.Position = UDim2.new(1, 300, 1, -5)
-    notif.Transparency = 0.05
-    notif.True.Text = data.TrueText
-    notif.False.Text = data.FalseText
-    
-    notif.True.MouseButton1Click:Connect(function()
-        pcall(data.Callback, true)
-        notif:Destroy()
-    end)
-    
-    notif.False.MouseButton1Click:Connect(function()
-        pcall(data.Callback, false)
-        notif:Destroy()
-    end)
-    
-    notif.Paragraph.Text = data.Text
-    notif.Title.Text = data.Title
-    notif:TweenPosition(UDim2.new(1, -5, 1, -5), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, data.TweenInSpeed)
-end
-
-Library.Notify = function(notificationData)
-    local data = notificationData or {}
-    data.TweenSpeed = data.TweenSpeed or 1
-    data.TweenInSpeed = data.TweenInSpeed or data.TweenSpeed
-    data.TweenOutSpeed = data.TweenOutSpeed or data.TweenSpeed
-    data.TweenVerticalSpeed = data.TweenVerticalSpeed or data.TweenSpeed
-    data.Title = data.Title or "Title"
-    data.Text = data.Text or "Text"
-    data.Duration = data.Duration or 5
-    
-    NotificationCount = NotificationCount + 1
-    local notif = NotificationHolder.DefaultNotif:Clone()
-    notif.Parent = NotificationHolder
-    notif.Visible = true
-    notif.Position = UDim2.new(1, 300, 1, -5)
-    notif.Transparency = 0.05
-    
-    notif.Paragraph.Text = data.Text
-    notif.Title.Text = data.Title
-    notif:TweenPosition(UDim2.new(1, -5, 1, -5), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, data.TweenInSpeed)
-    
-    task.spawn(function()
-        wait(data.Duration)
-        notif:TweenPosition(UDim2.new(1, 300, 1, -5), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, data.TweenOutSpeed)
-        wait(data.TweenOutSpeed)
-        notif:Destroy()
-    end)
-end
-
--- Tab creation
-Library.CreateTab = function(tabName)
+-- 创建标签页函数
+UILibrary.CreateTab = function(tabName)
     local tabButton = InstanceNew("TextButton")
     local tabContent = InstanceNew("ScrollingFrame")
     
-    -- Tab Button
+    -- 标签按钮
     tabButton.Name = "TabButton"
     tabButton.Parent = TabButtonsContainer
     tabButton.BackgroundColor3 = Color3(52, 62, 72)
@@ -356,7 +241,7 @@ Library.CreateTab = function(tabName)
     glowIndicator.Size = UDim2(0, 94, 0, 2)
     glowIndicator.Transparency = 1
     
-    -- Tab Content
+    -- 标签内容
     tabContent.Name = "Tab"
     tabContent.Parent = TabContentArea
     tabContent.Active = true
@@ -379,26 +264,26 @@ Library.CreateTab = function(tabName)
     tabPadding.Parent = tabContent
     tabPadding.PaddingTop = UDim(0, 6)
     
-    -- Set first tab as default
-    if not Library.CurrentTab then
-        Library.CurrentTab = {tabContent, tabButton}
+    -- 设置第一个标签为默认
+    if not UILibrary.CurrentTab then
+        UILibrary.CurrentTab = {tabContent, tabButton}
         glowIndicator.Transparency = 0
         tabContent.Visible = true
     end
     
-    -- Update content size
+    -- 更新内容大小
     tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         tabContent.CanvasSize = UDim2(0, 0, 0, tabLayout.AbsoluteContentSize.Y + 12)
     end)
     
-    -- Tab switching
+    -- 标签切换
     tabButton.MouseButton1Click:Connect(function()
-        Library.SwitchTab({tabContent, tabButton})
+        UILibrary.SwitchTab({tabContent, tabButton})
     end)
     
-    -- Return UI elements builder
+    -- 返回UI元素构建器
     return {
-        -- Add separator
+        -- 添加分隔符
         Separator = function()
             local separator = InstanceNew("Frame")
             separator.Transparency = 1
@@ -407,7 +292,7 @@ Library.CreateTab = function(tabName)
             separator.Parent = tabContent
         end,
         
-        -- Add button
+        -- 添加按钮
         Button = function(buttonText, callback)
             local button = InstanceNew("TextButton")
             button.Name = "BtnModule"
@@ -433,7 +318,7 @@ Library.CreateTab = function(tabName)
             end
         end,
         
-        -- Add toggle
+        -- 添加开关
         Toggle = function(toggleName, flagName, defaultValue, callback)
             local toggleState = defaultValue or false
             
@@ -456,7 +341,7 @@ Library.CreateTab = function(tabName)
             toggleCorner.Name = "ToggleModuleCorner"
             toggleCorner.Parent = toggleContainer
             
-            -- Off state indicator
+            -- 关闭状态指示器
             local offIndicator = InstanceNew("Frame")
             offIndicator.Name = "OffStatus"
             offIndicator.Parent = toggleContainer
@@ -465,7 +350,7 @@ Library.CreateTab = function(tabName)
             offIndicator.Position = UDim2(0.878205061, 0, 0.178571433, 0)
             offIndicator.Size = UDim2(0, 34, 0, 18)
             
-            -- On state indicator
+            -- 打开状态指示器
             local onIndicator = InstanceNew("Frame")
             onIndicator.Name = "OnStatus"
             onIndicator.Parent = toggleContainer
@@ -476,380 +361,51 @@ Library.CreateTab = function(tabName)
             onIndicator.Size = UDim2(0, 34, 0, 18)
             onIndicator.Transparency = 1
             
-            -- Store in flags
-            Library.Flags[flagName or toggleName] = {
+            -- 存储在Flags中
+            UILibrary.Flags[flagName or toggleName] = {
                 State = toggleState,
                 Callback = callback or function() end,
                 SetState = function(newState)
                     if newState == nil then
-                        newState = not Library.Flags[flagName or toggleName].State
+                        newState = not UILibrary.Flags[flagName or toggleName].State
                     end
-                    Library.Flags[flagName or toggleName].State = newState
+                    UILibrary.Flags[flagName or toggleName].State = newState
                     if callback then callback(newState) end
                     
-                    -- Update visual state
-                    Library.Tween({Transparency = newState and 1 or 0}, offIndicator):Play()
-                    Library.Tween({Transparency = newState and 0 or 1}, onIndicator):Play()
+                    -- 更新视觉状态
+                    UILibrary.Tween({Transparency = newState and 1 or 0}, offIndicator):Play()
+                    UILibrary.Tween({Transparency = newState and 0 or 1}, onIndicator):Play()
                 end
             }
             
-            -- Click handler
+            -- 点击处理
             toggleContainer.MouseButton1Click:Connect(function()
-                Library.Flags[flagName or toggleName]:SetState()
+                UILibrary.Flags[flagName or toggleName]:SetState()
             end)
             
-            -- Set initial state
+            -- 设置初始状态
             if defaultValue then
-                Library.Flags[flagName or toggleName]:SetState(defaultValue)
+                UILibrary.Flags[flagName or toggleName]:SetState(defaultValue)
             end
         end,
         
-        -- Add keybind
-        NewBind = function(keybindName, defaultKey, callback)
-            local currentKey = Enum.KeyCode[defaultKey]
-            local keyName = defaultKey or "None"
-            
-            local keybindContainer = InstanceNew("TextButton")
-            keybindContainer.Name = "KeybindModule"
-            keybindContainer.Parent = tabContent
-            keybindContainer.BackgroundColor3 = Color3(52, 62, 72)
-            keybindContainer.BorderSizePixel = 0
-            keybindContainer.Size = UDim2(0, 312, 0, 28)
-            keybindContainer.AutoButtonColor = false
-            keybindContainer.Font = Enum.Font.GothamSemibold
-            keybindContainer.Text = "  " .. keybindName
-            keybindContainer.TextColor3 = Color3(255, 255, 255)
-            keybindContainer.TextSize = 14
-            keybindContainer.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local keybindCorner = InstanceNew("UICorner")
-            keybindCorner.CornerRadius = UDim(0, 6)
-            keybindCorner.Name = "KeybindModuleCorner"
-            keybindCorner.Parent = keybindContainer
-            
-            local keyDisplay = InstanceNew("TextButton")
-            keyDisplay.Name = "KeybindValue"
-            keyDisplay.Parent = keybindContainer
-            keyDisplay.BackgroundColor3 = Color3(58, 69, 80)
-            keyDisplay.BorderSizePixel = 0
-            keyDisplay.Position = UDim2(0.75, 0, 0.178571433, 0)
-            keyDisplay.Size = UDim2(0, 74, 0, 18)
-            keyDisplay.AutoButtonColor = false
-            keyDisplay.Font = Enum.Font.Gotham
-            keyDisplay.Text = keyName
-            keyDisplay.TextColor3 = Color3(255, 255, 255)
-            keyDisplay.TextSize = 12
-            
-            local keyDisplayCorner = InstanceNew("UICorner")
-            keyDisplayCorner.CornerRadius = UDim(0, 4)
-            keyDisplayCorner.Name = "KeybindValueCorner"
-            keyDisplayCorner.Parent = keyDisplay
-            
-            -- Key detection
-            UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                if not gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
-                    if input.KeyCode == currentKey then
-                        callback(keyName)
-                    end
-                end
-            end)
-            
-            -- Rebind functionality
-            keyDisplay.MouseButton1Click:Connect(function()
-                keyDisplay.Text = "..."
-                local input = UserInputService.InputEnded:Wait()
-                
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    local newKey = input.KeyCode.Name
-                    currentKey = Enum.KeyCode[newKey]
-                    keyDisplay.Text = newKey
-                else
-                    keyDisplay.Text = keyName
-                end
-            end)
+        -- 添加文本标签
+        Label = function(labelText)
+            local label = InstanceNew("TextLabel")
+            label.Name = "LabelModule"
+            label.Parent = tabContent
+            label.BackgroundColor3 = Color3(52, 62, 72)
+            label.BackgroundTransparency = 0.75
+            label.BorderSizePixel = 0
+            label.Size = UDim2(0, 312, 0, 28)
+            label.Font = Enum.Font.GothamSemibold
+            label.Text = "  " .. labelText
+            label.TextColor3 = Color3(255, 255, 255)
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
         end,
         
-        -- Add slider
-        Slider = function(sliderName, flagName, defaultValue, minValue, maxValue, decimal, callback)
-            local currentValue = defaultValue or minValue
-            
-            local sliderContainer = InstanceNew("TextButton")
-            sliderContainer.Name = "SliderModule"
-            sliderContainer.Parent = tabContent
-            sliderContainer.BackgroundColor3 = Color3(52, 62, 72)
-            sliderContainer.BorderSizePixel = 0
-            sliderContainer.Size = UDim2(0, 312, 0, 28)
-            sliderContainer.AutoButtonColor = false
-            sliderContainer.Font = Enum.Font.GothamSemibold
-            sliderContainer.Text = "  " .. sliderName
-            sliderContainer.TextColor3 = Color3(255, 255, 255)
-            sliderContainer.TextSize = 14
-            sliderContainer.TextXAlignment = Enum.TextXAlignment.Left
-            sliderContainer.BackgroundTransparency = 0.75
-            
-            local sliderCorner = InstanceNew("UICorner")
-            sliderCorner.CornerRadius = UDim(0, 6)
-            sliderCorner.Name = "SliderModuleCorner"
-            sliderCorner.Parent = sliderContainer
-            
-            -- Slider track
-            local sliderTrack = InstanceNew("Frame")
-            sliderTrack.Name = "SliderBar"
-            sliderTrack.Parent = sliderContainer
-            sliderTrack.BackgroundColor3 = Color3(58, 69, 80)
-            sliderTrack.BackgroundTransparency = 0.75
-            sliderTrack.BorderSizePixel = 0
-            sliderTrack.Position = UDim2(0.442307681, 0, 0.392857134, 0)
-            sliderTrack.Size = UDim2(0, 108, 0, 6)
-            
-            -- Slider fill
-            local sliderFill = InstanceNew("Frame")
-            sliderFill.Name = "SliderPart"
-            sliderFill.Parent = sliderTrack
-            sliderFill.BackgroundColor3 = Color3(255, 255, 255)
-            sliderFill.BorderSizePixel = 0
-            sliderFill.Size = UDim2(0, 0, 0, 6)
-            
-            -- Value display
-            local valueBox = InstanceNew("TextBox")
-            valueBox.Name = "SliderValue"
-            valueBox.Parent = sliderContainer
-            valueBox.BackgroundColor3 = Color3(58, 69, 80)
-            valueBox.BackgroundTransparency = 0.75
-            valueBox.BorderSizePixel = 0
-            valueBox.Position = UDim2(0.884615362, 0, 0.178571433, 0)
-            valueBox.Size = UDim2(0, 32, 0, 18)
-            valueBox.Font = Enum.Font.Gotham
-            valueBox.Text = tostring(currentValue)
-            valueBox.TextColor3 = Color3(255, 255, 255)
-            valueBox.TextSize = 12
-            
-            -- Value adjustment functions
-            Library.Flags[flagName] = {
-                State = currentValue,
-                SetValue = function(newValue)
-                    local percentage
-                    if newValue then
-                        percentage = (newValue - minValue) / (maxValue - minValue)
-                    else
-                        local mousePos = PlayerMouse.X
-                        local trackPos = sliderTrack.AbsolutePosition.X
-                        local trackSize = sliderTrack.AbsoluteSize.X
-                        percentage = math.clamp((mousePos - trackPos) / trackSize, 0, 1)
-                    end
-                    
-                    local rawValue = minValue + (maxValue - minValue) * percentage
-                    local finalValue
-                    
-                    if decimal then
-                        finalValue = tonumber(string.format("%.1f", rawValue))
-                    else
-                        finalValue = math.floor(rawValue)
-                    end
-                    
-                    finalValue = math.clamp(finalValue, minValue, maxValue)
-                    
-                    Library.Flags[flagName].State = finalValue
-                    valueBox.Text = tostring(finalValue)
-                    sliderFill.Size = UDim2(percentage, 0, 0, 6)
-                    
-                    if callback then callback(finalValue) end
-                end
-            }
-            
-            -- Initialize
-            Library.Flags[flagName]:SetValue(currentValue)
-            
-            -- Slider interaction
-            local isDragging = false
-            sliderTrack.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    isDragging = true
-                    Library.Flags[flagName]:SetValue()
-                end
-            end)
-            
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    isDragging = false
-                end
-            end)
-            
-            UserInputService.InputChanged:Connect(function()
-                if isDragging then
-                    Library.Flags[flagName]:SetValue()
-                end
-            end)
-        end,
-        
-        -- Add dropdown
-        Dropdown = function(dropdownName, flagName, options, callback)
-            local currentOption = options[1] or ""
-            
-            local dropdownContainer = InstanceNew("TextButton")
-            dropdownContainer.Name = "DropdownModule"
-            dropdownContainer.Parent = tabContent
-            dropdownContainer.BackgroundColor3 = Color3(52, 62, 72)
-            dropdownContainer.BorderSizePixel = 0
-            dropdownContainer.Size = UDim2(0, 312, 0, 28)
-            dropdownContainer.AutoButtonColor = false
-            dropdownContainer.Font = Enum.Font.GothamSemibold
-            dropdownContainer.Text = ""
-            dropdownContainer.TextColor3 = Color3(255, 255, 255)
-            dropdownContainer.TextSize = 14
-            dropdownContainer.TextXAlignment = Enum.TextXAlignment.Left
-            dropdownContainer.BackgroundTransparency = 0.75
-            
-            local dropdownCorner = InstanceNew("UICorner")
-            dropdownCorner.CornerRadius = UDim(0, 6)
-            dropdownCorner.Name = "DropdownModuleCorner"
-            dropdownCorner.Parent = dropdownContainer
-            
-            -- Dropdown text
-            local dropdownText = InstanceNew("TextBox")
-            dropdownText.Name = "DropdownText"
-            dropdownText.Parent = dropdownContainer
-            dropdownText.BackgroundColor3 = Color3(255, 255, 255)
-            dropdownText.BackgroundTransparency = 1
-            dropdownText.Position = UDim2(0.025641026, 0, 0, 0)
-            dropdownText.Size = UDim2(0, 192, 0, 28)
-            dropdownText.Font = Enum.Font.GothamSemibold
-            dropdownText.PlaceholderText = dropdownName
-            dropdownText.PlaceholderColor3 = Color3(255, 255, 255)
-            dropdownText.TextColor3 = Color3(255, 255, 255)
-            dropdownText.TextSize = 14
-            dropdownText.TextXAlignment = Enum.TextXAlignment.Left
-            dropdownText.Text = ""
-            
-            -- Dropdown toggle button
-            local toggleButton = InstanceNew("TextButton")
-            toggleButton.Name = "OpenDropdown"
-            toggleButton.Parent = dropdownContainer
-            toggleButton.BackgroundColor3 = Color3(255, 255, 255)
-            toggleButton.BackgroundTransparency = 1
-            toggleButton.BorderSizePixel = 0
-            toggleButton.Position = UDim2(0.907051265, 0, 0.178571433, 0)
-            toggleButton.Size = UDim2(0, 18, 0, 18)
-            toggleButton.Font = Enum.Font.Gotham
-            toggleButton.Text = "+"
-            toggleButton.TextColor3 = Color3(255, 255, 255)
-            toggleButton.TextSize = 22
-            
-            -- Dropdown options container
-            local optionsContainer = InstanceNew("Frame")
-            optionsContainer.Name = "DropdownBottom"
-            optionsContainer.Parent = tabContent
-            optionsContainer.BackgroundColor3 = Color3(52, 62, 72)
-            optionsContainer.BackgroundTransparency = 0.75
-            optionsContainer.BorderSizePixel = 0
-            optionsContainer.ClipsDescendants = true
-            optionsContainer.Size = UDim2(0, 312, 0, 0)
-            optionsContainer.Visible = false
-            
-            local optionsLayout = InstanceNew("UIListLayout")
-            optionsLayout.Parent = optionsContainer
-            optionsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            optionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            optionsLayout.Padding = UDim(0, 6)
-            
-            local optionsPadding = InstanceNew("UIPadding")
-            optionsPadding.Parent = optionsContainer
-            optionsPadding.PaddingTop = UDim(0, 6)
-            
-            -- Dropdown functionality
-            local isOpen = false
-            
-            local function ToggleDropdown()
-                isOpen = not isOpen
-                optionsContainer.Visible = isOpen
-                toggleButton.Text = isOpen and "-" or "+"
-                
-                if isOpen then
-                    Library.Tween({Size = UDim2(0, 312, 0, optionsLayout.AbsoluteContentSize.Y + 12)}, optionsContainer, 0.35):Play()
-                else
-                    Library.Tween({Size = UDim2(0, 312, 0, 0)}, optionsContainer, 0.35):Play()
-                end
-            end
-            
-            toggleButton.MouseButton1Click:Connect(ToggleDropdown)
-            
-            -- Add options
-            Library.Flags[flagName] = {
-                State = currentOption,
-                SetOptions = function(newOptions)
-                    -- Clear existing options
-                    for _, child in pairs(optionsContainer:GetChildren()) do
-                        if child:IsA("TextButton") then
-                            child:Destroy()
-                        end
-                    end
-                    
-                    -- Add new options
-                    for _, option in ipairs(newOptions) do
-                        local optionButton = InstanceNew("TextButton")
-                        optionButton.Name = option
-                        optionButton.Parent = optionsContainer
-                        optionButton.BackgroundColor3 = Color3(58, 69, 80)
-                        optionButton.BackgroundTransparency = 0.75
-                        optionButton.BorderSizePixel = 0
-                        optionButton.Size = UDim2(0, 300, 0, 28)
-                        optionButton.AutoButtonColor = false
-                        optionButton.Font = Enum.Font.GothamSemibold
-                        optionButton.Text = option
-                        optionButton.TextColor3 = Color3(255, 255, 255)
-                        optionButton.TextSize = 14
-                        
-                        optionButton.MouseButton1Click:Connect(function()
-                            dropdownText.PlaceholderText = option
-                            dropdownText.Text = ""
-                            Library.Flags[flagName].State = option
-                            ToggleDropdown()
-                            if callback then callback(option) end
-                        end)
-                    end
-                end,
-                ClearOptions = function()
-                    for _, child in pairs(optionsContainer:GetChildren()) do
-                        if child:IsA("TextButton") then
-                            child:Destroy()
-                        end
-                    end
-                end,
-                AddOption = function(option)
-                    local optionButton = InstanceNew("TextButton")
-                    optionButton.Name = option
-                    optionButton.Parent = optionsContainer
-                    optionButton.BackgroundColor3 = Color3(58, 69, 80)
-                    optionButton.BackgroundTransparency = 0.75
-                    optionButton.BorderSizePixel = 0
-                    optionButton.Size = UDim2(0, 300, 0, 28)
-                    optionButton.AutoButtonColor = false
-                    optionButton.Font = Enum.Font.GothamSemibold
-                    optionButton.Text = option
-                    optionButton.TextColor3 = Color3(255, 255, 255)
-                    optionButton.TextSize = 14
-                    
-                    optionButton.MouseButton1Click:Connect(function()
-                        dropdownText.PlaceholderText = option
-                        dropdownText.Text = ""
-                        Library.Flags[flagName].State = option
-                        ToggleDropdown()
-                        if callback then callback(option) end
-                    end)
-                end,
-                RemoveOption = function(option)
-                    local optionButton = optionsContainer:FindFirstChild(option)
-                    if optionButton then
-                        optionButton:Destroy()
-                    end
-                end
-            }
-            
-            -- Initialize options
-            Library.Flags[flagName]:SetOptions(options)
-        end,
-        
-        -- Add textbox
+        -- 添加文本框
         Textbox = function(textboxName, placeholder, callback)
             local textboxContainer = InstanceNew("TextButton")
             textboxContainer.Name = "TextboxModule"
@@ -899,9 +455,5 @@ Library.CreateTab = function(tabName)
     }
 end
 
--- Initialize
-CreateMarkers()
-ShowStartupMessages()
-
--- Return library for external use
-return Library
+-- 设置UI库全局可用
+return UILibrary
